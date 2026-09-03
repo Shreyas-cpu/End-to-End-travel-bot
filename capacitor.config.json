@@ -1,0 +1,15 @@
+{
+  "appId": "com.skyvoyage.travelbot",
+  "appName": "SkyVoyage AI",
+  "webDir": "public",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": true
+  }
+}

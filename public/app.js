@@ -1,0 +1,503 @@
+// SkyVoyage AI Client Application
+let currentSessionId = localStorage.getItem('skyvoyage_session_id') || null;
+
+const messagesContainer = document.getElementById('messagesContainer');
+const chatForm = document.getElementById('chatForm');
+const messageInput = document.getElementById('messageInput');
+const typingIndicator = document.getElementById('typingIndicator');
+const btnResetSession = document.getElementById('btnResetSession');
+const sidebarToggle = document.getElementById('sidebarToggle');
+const sidebar = document.getElementById('sidebar');
+
+// Sidebar Steps Elements
+const stepElements = {
+  INITIATION: document.getElementById('step-initiation'),
+  FLIGHT_SELECTION: document.getElementById('step-flight'),
+  HOTEL_SELECTION: document.getElementById('step-hotel'),
+  CAB_SELECTION: document.getElementById('step-cab'),
+  CHECKOUT_SUMMARY: document.getElementById('step-summary'),
+  CONFIRMED: document.getElementById('step-confirmed')
+};
+
+// Initialize App
+document.addEventListener('DOMContentLoaded', () => {
+  setupEventListeners();
+  registerServiceWorker();
+  if (currentSessionId) {
+    loadChatHistory(currentSessionId);
+  }
+});
+
+function registerServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch((err) => {
+        console.log('SW registration note:', err);
+      });
+    });
+  }
+}
+
+function setupEventListeners() {
+  chatForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = messageInput.value.trim();
+    if (!text) return;
+    sendMessage(text);
+    messageInput.value = '';
+    messageInput.blur(); // Dismiss Android virtual keyboard after sending
+  });
+
+  // Quick Chips
+  document.addEventListener('click', (e) => {
+    const chip = e.target.closest('.quick-chip');
+    if (chip) {
+      const prompt = chip.getAttribute('data-prompt');
+      if (prompt) {
+        sendMessage(prompt);
+      }
+    }
+  });
+
+  // Reset Session
+  btnResetSession.addEventListener('click', async () => {
+    if (confirm('Start a fresh travel booking session?')) {
+      localStorage.removeItem('skyvoyage_session_id');
+      currentSessionId = null;
+      window.location.reload();
+    }
+  });
+
+  // Mobile Sidebar Toggle & Backdrop
+  let backdrop = document.querySelector('.sidebar-backdrop');
+  if (!backdrop) {
+    backdrop = document.createElement('div');
+    backdrop.className = 'sidebar-backdrop';
+    document.body.appendChild(backdrop);
+  }
+
+  if (sidebarToggle) {
+    sidebarToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      backdrop.classList.toggle('active', sidebar.classList.contains('open'));
+    });
+  }
+
+  backdrop.addEventListener('click', () => {
+    sidebar.classList.remove('open');
+    backdrop.classList.remove('active');
+  });
+}
+
+async function sendMessage(text, actionPayload = null) {
+  // Render user message in chat
+  if (text) {
+    appendUserMessage(text);
+  }
+
+  showTyping(true);
+
+  try {
+    const response = await fetch('/api/chat/message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId: currentSessionId,
+        message: text,
+        actionPayload
+      })
+    });
+
+    const data = await response.json();
+    showTyping(false);
+
+    if (data.sessionId) {
+      currentSessionId = data.sessionId;
+      localStorage.setItem('skyvoyage_session_id', currentSessionId);
+    }
+
+    // Update Sidebar Workflow Indicator
+    updateWorkflowTracker(data.step);
+
+    // Append Assistant Response
+    appendAssistantMessage(data.reply, data.cards);
+
+  } catch (error) {
+    showTyping(false);
+    console.error('Error sending message:', error);
+    appendAssistantMessage('⚠️ Connection error. Please make sure the backend server is running and try again.');
+  }
+}
+
+async function loadChatHistory(sessionId) {
+  try {
+    const response = await fetch(`/api/chat/history/${sessionId}`);
+    if (!response.ok) return;
+
+    const data = await response.json();
+    if (data.messages && data.messages.length > 0) {
+      messagesContainer.innerHTML = '';
+      data.messages.forEach(msg => {
+        if (msg.role === 'user') {
+          appendUserMessage(msg.content);
+        } else {
+          appendAssistantMessage(msg.content, msg.metadata);
+        }
+      });
+      if (data.session?.currentStep) {
+        updateWorkflowTracker(data.session.currentStep);
+      }
+    }
+  } catch (err) {
+    console.warn('Could not load history:', err);
+  }
+}
+
+function appendUserMessage(text) {
+  const row = document.createElement('div');
+  row.className = 'message-row user';
+  row.innerHTML = `
+    <div class="avatar"><i class="fa-solid fa-user"></i></div>
+    <div class="message-content">
+      <div class="message-bubble">
+        <p>${escapeHtml(text)}</p>
+      </div>
+    </div>
+  `;
+  messagesContainer.appendChild(row);
+  scrollToBottom();
+}
+
+function appendAssistantMessage(text, cards) {
+  const row = document.createElement('div');
+  row.className = 'message-row assistant';
+
+  const formattedText = formatMarkdown(text);
+
+  let cardsHtml = '';
+  if (cards) {
+    cardsHtml = renderCards(cards);
+  }
+
+  row.innerHTML = `
+    <div class="avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+    <div class="message-content">
+      <div class="message-bubble">
+        ${formattedText}
+      </div>
+      ${cardsHtml}
+    </div>
+  `;
+
+  messagesContainer.appendChild(row);
+  attachCardActionHandlers(row);
+  scrollToBottom();
+}
+
+function renderCards(cards) {
+  if (!cards || !cards.type) return '';
+
+  if (cards.type === 'flights' && Array.isArray(cards.data)) {
+    window.cachedFlights = cards.data;
+    return `
+      <div class="cards-grid">
+        ${cards.data.map((flight, idx) => `
+          <div class="flight-card" data-flight-id="${flight.id}">
+            <div class="flight-card-header">
+              <div class="airline-badge">
+                <div class="airline-icon"><i class="fa-solid fa-plane"></i></div>
+                <span>${escapeHtml(flight.airline)}</span>
+              </div>
+              <span class="cabin-pill">${escapeHtml(flight.cabinClass)}</span>
+            </div>
+
+            <div class="flight-route-row">
+              <div class="route-node">
+                <span class="route-time">${flight.departureTime}</span>
+                <span class="route-airport">${flight.originAirport}</span>
+              </div>
+              <div class="route-path">
+                <span class="path-duration">${flight.duration}</span>
+                <div class="path-line"></div>
+                <span class="path-duration">${flight.stops === 0 ? 'Direct' : flight.stops + ' Stop'}</span>
+              </div>
+              <div class="route-node right">
+                <span class="route-time">${flight.arrivalTime}</span>
+                <span class="route-airport">${flight.destinationAirport}</span>
+              </div>
+            </div>
+
+            <div class="flight-card-footer">
+              <div class="card-price">$${flight.price} <span>USD / person</span></div>
+              <button class="btn-card-select" onclick="handleSelectFlight(${idx})">
+                Select <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  if (cards.type === 'hotels' && Array.isArray(cards.data)) {
+    window.cachedHotels = cards.data;
+    return `
+      <div class="cards-grid">
+        ${cards.data.map((hotel, idx) => `
+          <div class="hotel-card" data-hotel-id="${hotel.id}">
+            <div class="hotel-img-container">
+              <img src="${hotel.imageUrl}" alt="${escapeHtml(hotel.name)}" class="hotel-img" loading="lazy" />
+              <div class="hotel-partner-badge"><i class="fa-solid fa-b"></i> Booking.com</div>
+              <div class="hotel-rating-badge">★ ${hotel.starRating} Stars</div>
+            </div>
+            <div class="hotel-body">
+              <div class="hotel-name">${escapeHtml(hotel.name)}</div>
+              <div class="hotel-location"><i class="fa-solid fa-location-dot"></i> ${escapeHtml(hotel.address)}</div>
+              
+              <div class="bkg-review-box">
+                <span class="review-score">${hotel.reviewScore}</span>
+                <span class="review-label">${hotel.reviewRatingText}</span>
+                <span class="review-count">(${hotel.reviewCount.toLocaleString()} reviews)</span>
+              </div>
+
+              <div class="amenities-row">
+                ${hotel.amenities.slice(0, 3).map(a => `<span class="amenity-tag">${escapeHtml(a)}</span>`).join('')}
+              </div>
+            </div>
+            <div class="hotel-footer">
+              <div class="card-price">$${hotel.pricePerNight} <span>/ night ($${hotel.totalPrice} total)</span></div>
+              <button class="btn-card-select" onclick="handleSelectHotel(${idx})">
+                Select Stay <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  if (cards.type === 'cabs' && Array.isArray(cards.data)) {
+    window.cachedCabs = cards.data;
+    return `
+      <div class="cards-grid">
+        ${cards.data.map((cab, idx) => `
+          <div class="cab-card" data-cab-id="${cab.id}">
+            <div class="cab-header">
+              <div class="cab-icon-badge">
+                <div class="cab-icon"><i class="fa-solid fa-car-side"></i></div>
+                <div class="cab-details">
+                  <h4>${escapeHtml(cab.vehicleType)}</h4>
+                  <p>${escapeHtml(cab.vehicleModel)}</p>
+                </div>
+              </div>
+              <span class="pill-badge live">★ ${cab.driverRating}</span>
+            </div>
+
+            <div class="cab-meta-row">
+              <span class="cab-meta-item"><i class="fa-solid fa-user-group"></i> Up to ${cab.capacity}</span>
+              <span class="cab-meta-item"><i class="fa-solid fa-suitcase"></i> ${cab.luggageCount} Bags</span>
+              <span class="cab-meta-item"><i class="fa-solid fa-clock"></i> ${cab.estimatedDuration}</span>
+            </div>
+
+            <div class="cab-footer">
+              <div class="card-price">$${cab.price} <span>flat fare</span></div>
+              <button class="btn-card-select" onclick="handleSelectCab(${idx})">
+                Book Transfer <i class="fa-solid fa-check"></i>
+              </button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div style="margin-top: 10px; text-align: right;">
+        <button class="quick-chip" onclick="handleSkipCab()">Skip Airport Transfer ➔</button>
+      </div>
+    `;
+  }
+
+  if (cards.type === 'summary' && cards.data) {
+    const s = cards.data;
+    return `
+      <div class="summary-card">
+        <div class="summary-header">
+          <h3><i class="fa-solid fa-suitcase-rolling"></i> Complete Trip Summary</h3>
+          <span class="pill-badge live">Verified Rates</span>
+        </div>
+
+        <div class="summary-items">
+          ${s.flight ? `
+            <div class="summary-item">
+              <span>✈️ Flight: <strong>${escapeHtml(s.flight.airline)} (${s.flight.flightNumber})</strong></span>
+              <strong>$${s.flight.price.toFixed(2)}</strong>
+            </div>
+          ` : ''}
+
+          ${s.hotel ? `
+            <div class="summary-item">
+              <span>🏨 Hotel: <strong>${escapeHtml(s.hotel.name)} (${s.hotel.totalNights} Nights)</strong></span>
+              <strong>$${s.hotel.totalPrice.toFixed(2)}</strong>
+            </div>
+          ` : ''}
+
+          ${s.cab ? `
+            <div class="summary-item">
+              <span>🚕 Transfer: <strong>${escapeHtml(s.cab.vehicleType)}</strong></span>
+              <strong>$${s.cab.price.toFixed(2)}</strong>
+            </div>
+          ` : ''}
+
+          <div class="summary-divider"></div>
+
+          <div class="summary-item">
+            <span>Subtotal:</span>
+            <span>$${s.subtotal.toFixed(2)}</span>
+          </div>
+
+          <div class="summary-item">
+            <span>Taxes & Service Fees (12%):</span>
+            <span>$${s.taxesAndFees.toFixed(2)}</span>
+          </div>
+
+          <div class="summary-divider"></div>
+
+          <div class="summary-total">
+            <span>Total Package:</span>
+            <span>$${s.totalCost.toFixed(2)} USD</span>
+          </div>
+        </div>
+
+        <button class="btn-confirm-booking" onclick="handleConfirmBooking()">
+          <i class="fa-solid fa-file-pdf"></i> Confirm & Generate E-Tickets
+        </button>
+      </div>
+    `;
+  }
+
+  if (cards.type === 'ticket' && cards.data) {
+    const t = cards.data;
+    return `
+      <div class="ticket-card">
+        <div class="ticket-header">
+          <div>
+            <h3 style="font-size: 16px; font-weight: 700; color: #34D399;"><i class="fa-solid fa-circle-check"></i> E-Ticket Voucher Ready</h3>
+            <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Issued for ${escapeHtml(t.passengerName)}</p>
+          </div>
+          <div class="ticket-ref-badge">${escapeHtml(t.bookingReference)}</div>
+        </div>
+
+        <p style="font-size: 13px; color: var(--text-secondary);">
+          Your complete flight itinerary, Booking.com voucher, and transfer confirmation have been compiled into an official PDF travel document.
+        </p>
+
+        <div class="ticket-actions">
+          <a href="${t.pdfUrl}" target="_blank" class="btn-download-ticket">
+            <i class="fa-solid fa-download"></i> Download Official PDF
+          </a>
+          <a href="${t.pdfUrl}" target="_blank" class="btn-card-select" style="background: rgba(255,255,255,0.08); padding: 12px 18px;">
+            <i class="fa-solid fa-eye"></i> View
+          </a>
+        </div>
+      </div>
+    `;
+  }
+
+  return '';
+}
+
+function attachCardActionHandlers(container) {
+  // Store cards in window context for click triggers
+}
+
+// Action Trigger Handlers
+window.handleSelectFlight = function(idx) {
+  const flight = window.cachedFlights ? window.cachedFlights[idx] : null;
+  if (!flight) return;
+  sendMessage(`Selected Flight: ${flight.airline} (${flight.flightNumber})`, {
+    action: 'SELECT_FLIGHT',
+    item: flight
+  });
+};
+
+window.handleSelectHotel = function(idx) {
+  const hotel = window.cachedHotels ? window.cachedHotels[idx] : null;
+  if (!hotel) return;
+  sendMessage(`Selected Hotel: ${hotel.name}`, {
+    action: 'SELECT_HOTEL',
+    item: hotel
+  });
+};
+
+window.handleSelectCab = function(idx) {
+  const cab = window.cachedCabs ? window.cachedCabs[idx] : null;
+  if (!cab) return;
+  sendMessage(`Selected Transfer: ${cab.vehicleType} ($${cab.price})`, {
+    action: 'SELECT_CAB',
+    item: cab
+  });
+};
+
+window.handleSkipCab = function() {
+  sendMessage('Skip airport transfer', {
+    action: 'SKIP_CAB'
+  });
+};
+
+window.handleConfirmBooking = function() {
+  sendMessage('Confirm my travel reservation and issue official tickets', {
+    action: 'CONFIRM_BOOKING'
+  });
+};
+
+// Workflow State Tracker
+function updateWorkflowTracker(step) {
+  const stepsOrder = ['INITIATION', 'FLIGHT_SELECTION', 'HOTEL_SELECTION', 'CAB_SELECTION', 'CHECKOUT_SUMMARY', 'CONFIRMED'];
+  const currentIndex = stepsOrder.indexOf(step);
+
+  stepsOrder.forEach((s, idx) => {
+    const el = stepElements[s];
+    if (!el) return;
+
+    if (idx < currentIndex) {
+      el.className = 'step-item completed';
+    } else if (idx === currentIndex) {
+      el.className = 'step-item active';
+    } else {
+      el.className = 'step-item';
+    }
+  });
+}
+
+function showTyping(show) {
+  if (typingIndicator) {
+    typingIndicator.style.display = show ? 'flex' : 'none';
+    if (show) scrollToBottom();
+  }
+}
+
+function scrollToBottom() {
+  setTimeout(() => {
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }, 50);
+}
+
+function formatMarkdown(text) {
+  if (!text) return '';
+  let html = escapeHtml(text);
+
+  // Bold
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  // Italic
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+  // Linebreaks
+  html = html.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
+
+  return `<p>${html}</p>`;
+}
+
+function escapeHtml(unsafe) {
+  return String(unsafe)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}

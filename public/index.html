@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+  <title>SkyVoyage AI | Intelligent Travel Booking Assistant</title>
+  <meta name="description" content="AI-first travel booking framework for discovering flights, Booking.com accommodations, transfers, and automated PDF ticketing.">
+  <meta name="theme-color" content="#0B0F19">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3125/3125713.png">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3125/3125713.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Left Navigation / Itinerary Tracker Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-plane-departure"></i>
+        </div>
+        <div class="brand-text">
+          <h2>SkyVoyage <span>AI</span></h2>
+          <p>Travel Booking Framework</p>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-title">TRIP WORKFLOW</div>
+        <div class="journey-tracker" id="journeyTracker">
+          <div class="step-item active" data-step="INITIATION" id="step-initiation">
+            <div class="step-dot"><i class="fa-solid fa-compass"></i></div>
+            <div class="step-info">
+              <span class="step-name">Trip Discovery</span>
+              <span class="step-sub" id="trip-dest-text">Destination & Dates</span>
+            </div>
+          </div>
+          <div class="step-item" data-step="FLIGHT_SELECTION" id="step-flight">
+            <div class="step-dot"><i class="fa-solid fa-plane"></i></div>
+            <div class="step-info">
+              <span class="step-name">Flight Selection</span>
+              <span class="step-sub" id="flight-status-text">Pending discovery</span>
+            </div>
+          </div>
+          <div class="step-item" data-step="HOTEL_SELECTION" id="step-hotel">
+            <div class="step-dot"><i class="fa-solid fa-hotel"></i></div>
+            <div class="step-info">
+              <span class="step-name">Booking.com Stay</span>
+              <span class="step-sub" id="hotel-status-text">Pending selection</span>
+            </div>
+          </div>
+          <div class="step-item" data-step="CAB_SELECTION" id="step-cab">
+            <div class="step-dot"><i class="fa-solid fa-taxi"></i></div>
+            <div class="step-info">
+              <span class="step-name">Airport Transfer</span>
+              <span class="step-sub" id="cab-status-text">Pending transfer</span>
+            </div>
+          </div>
+          <div class="step-item" data-step="CHECKOUT_SUMMARY" id="step-summary">
+            <div class="step-dot"><i class="fa-solid fa-receipt"></i></div>
+            <div class="step-info">
+              <span class="step-name">Checkout & Review</span>
+              <span class="step-sub" id="summary-status-text">Cost itemization</span>
+            </div>
+          </div>
+          <div class="step-item" data-step="CONFIRMED" id="step-confirmed">
+            <div class="step-dot"><i class="fa-solid fa-ticket"></i></div>
+            <div class="step-info">
+              <span class="step-name">E-Ticket & Vouchers</span>
+              <span class="step-sub" id="ticket-status-text">PDF generation</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Provider Diagnostics Pill -->
+      <div class="provider-badge-box">
+        <div class="provider-title"><i class="fa-solid fa-plug"></i> Connected Engines</div>
+        <div class="provider-row">
+          <span>Booking.com v3</span>
+          <span class="pill-badge mock" id="bkg-badge">Ready (Plug & Play)</span>
+        </div>
+        <div class="provider-row">
+          <span>Amadeus Flights</span>
+          <span class="pill-badge mock" id="flt-badge">Ready (Plug & Play)</span>
+        </div>
+        <div class="provider-row">
+          <span>PDF Document Engine</span>
+          <span class="pill-badge live">Active</span>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="btn-reset" id="btnResetSession">
+          <i class="fa-solid fa-rotate-right"></i> Reset & Start Over
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Chat Workspace -->
+    <main class="chat-workspace">
+      <!-- Top Bar -->
+      <header class="chat-header">
+        <div class="header-left">
+          <button class="mobile-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+          <div>
+            <h1>Conversational Travel Concierge</h1>
+            <p class="status-indicator"><span class="status-dot"></span> AI Travel Orchestrator Online</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <a href="/api/health" target="_blank" class="header-btn" title="API Diagnostics">
+            <i class="fa-solid fa-code"></i> API Status
+          </a>
+        </div>
+      </header>
+
+      <!-- Messages Stream -->
+      <div class="messages-container" id="messagesContainer">
+        <!-- Initial Greeting Message -->
+        <div class="message-row assistant">
+          <div class="avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+          <div class="message-content">
+            <div class="message-bubble">
+              <p>👋 Hello! I am your <strong>AI Travel Assistant</strong>. Tell me where you'd like to travel, and I'll find top flights, <strong>Booking.com accommodations</strong>, airport transfers, and prepare your official <strong>PDF tickets & vouchers</strong> directly in this chat.</p>
+              <div class="quick-suggestions">
+                <button class="quick-chip" data-prompt="Plan a 4-day trip to Paris for 2 people starting next month"><i class="fa-solid fa-plane"></i> 4 Days in Paris (2 Guests)</button>
+                <button class="quick-chip" data-prompt="Find a luxury trip to Tokyo for next month"><i class="fa-solid fa-torii-gate"></i> Luxury Tokyo Getaway</button>
+                <button class="quick-chip" data-prompt="Plan a trip from London to Rome for 2 people"><i class="fa-solid fa-landmark"></i> London to Rome</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Typing Indicator -->
+      <div class="typing-indicator" id="typingIndicator" style="display: none;">
+        <div class="avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        <div class="typing-bubble">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+      </div>
+
+      <!-- Message Input Form -->
+      <footer class="chat-footer">
+        <form class="input-form" id="chatForm">
+          <input 
+            type="text" 
+            id="messageInput" 
+            placeholder="Type your travel request (e.g. 'Plan a trip to London for 2 people')..." 
+            autocomplete="off"
+            required
+          />
+          <button type="submit" class="btn-send" id="btnSend" title="Send Message">
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </form>
+      </footer>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
