@@ -8,14 +8,16 @@
 - **Email**: traveler@example.com
 
 ## Travel Preferences
-- **Preferred Cabin Class**: Business
+- **Preferred Cabin Class**: Premium Economy
 - **Preferred Hotel Location**: Near Airport
 - **Preferred Departure Time**: morning
 - **Favorite Airlines**: Air France, Delta Air Lines, British Airways
-- **Frequent Destinations**: Paris, London
+- **Frequent Destinations**: Paris, London, Rome
 - **Preferred Amenities**: Free WiFi, Breakfast Included
 
 ## Booking History
 | Date | Reference | Destination | Flight & Cabin | Hotel | Total USD |
 |---|---|---|---|---|---|
-| 2026-09-04 | `TRV-674638` | London | British Airways (BA 178) (Business) | Premier Inn London Heathrow Airport T4 | $1766.24 |
+| 2026-09-04 | `TRV-657978` | Rome | British Airways (BA 178) (Premium Economy) | Rome Airport Transit Plaza Hotel | $985.60 |
+| 2026-09-04 | `TRV-592321` | Rome | British Airways (BA 178) (Premium Economy) (N/A) | Rome Airport Transit Plaza Hotel | $985.60 |
+| 2026-09-04 | `TRV-674638` | London | British Airways (BA 178) (Business) (N/A) (N/A) | Premier Inn London Heathrow Airport T4 | $1766.24 |

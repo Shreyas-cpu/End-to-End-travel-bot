@@ -41,13 +41,13 @@
     {
       "number": "8",
       "name": "End-to-End Integration, UI Polish & Verification",
-      "status": "pending"
+      "status": "complete"
     }
   ],
   "next": {
-    "command": "/gsd-progress --next",
-    "label": "Advance to the next step (plan phase 8)",
-    "reason": "Phase 8 of 8 — needs a plan"
+    "command": "/gsd-new-milestone",
+    "label": "Start a new milestone",
+    "reason": "All phases complete — start a new milestone"
   },
-  "updated_at": "2026-09-04T10:50:39.368Z"
+  "updated_at": "2026-09-04T10:53:27.858Z"
 }
