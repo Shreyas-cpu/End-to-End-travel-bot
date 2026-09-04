@@ -133,10 +133,13 @@ export class TravelOrchestrator {
       destination,
       startDate,
       endDate,
-      guests
+      guests,
+      timePreference: ruleExtracted.timePreference,
+      preferredCabin: ruleExtracted.preferredCabin
     });
 
-    const defaultReply = `✈️ Great! I found top flight options from **${origin}** to **${destination}** for **${startDate}** to **${endDate}** (${guests} traveler${guests > 1 ? 's' : ''}).\n\nPlease select your preferred flight to continue:`;
+    const timePrefNotice = ruleExtracted.timePreference ? ` (${ruleExtracted.timePreference} departures prioritized)` : '';
+    const defaultReply = `✈️ Great! I found top flight options from **${origin}** to **${destination}** for **${startDate}** to **${endDate}** (${guests} traveler${guests > 1 ? 's' : ''})${timePrefNotice}.\n\nPlease select your preferred cabin class and flight to continue:`;
     
     const reply = await this.generateAIResponse('FLIGHT_SELECTION', {
       origin,
@@ -208,7 +211,7 @@ export class TravelOrchestrator {
       guests: session.guests || 2
     });
 
-    const defaultReply = `✅ **Flight Selected**: ${flight.airline} (${flight.flightNumber}) - $${flight.price} USD.\n\n🏨 Next, let's pick your stay in **${session.destination || 'Paris'}**. Here are top-rated accommodations via **Booking.com Demand API**:`;
+    const defaultReply = `✅ **Flight Selected**: ${flight.airline} (${flight.flightNumber}) — **${flight.cabinClass || 'Economy'}** for $${flight.price} USD.\n\n🏨 Next, let's pick your stay in **${session.destination || 'Paris'}**. Here are top-rated accommodations via **Booking.com Demand API**:`;
     
     const reply = await this.generateAIResponse('HOTEL_SELECTION', {
       selectedFlight: flight.airline,
@@ -448,7 +451,10 @@ export class TravelOrchestrator {
     const { action, item } = payload;
 
     if (action === 'SELECT_FLIGHT') {
-      return this.proceedToHotelSelection(session, item);
+      const flight: FlightOffer = { ...item };
+      if (payload.cabinClass) flight.cabinClass = payload.cabinClass;
+      if (payload.price) flight.price = payload.price;
+      return this.proceedToHotelSelection(session, flight);
     } else if (action === 'SELECT_HOTEL') {
       return this.proceedToCabSelection(session, item);
     } else if (action === 'SELECT_CAB') {
@@ -463,7 +469,7 @@ export class TravelOrchestrator {
   }
 
   /**
-   * Entity extraction helper (origin, destination, dates, guests)
+   * Entity extraction helper (origin, destination, dates, guests, timing, cabin)
    */
   private extractTripEntities(text: string) {
     const lower = text.toLowerCase();
@@ -472,6 +478,8 @@ export class TravelOrchestrator {
     let startDate = '2026-10-12';
     let endDate = '2026-10-16';
     let guests = 2;
+    let timePreference: string | undefined = undefined;
+    let preferredCabin: any = undefined;
 
     // Detect destinations
     if (lower.includes('london')) destination = 'London';
@@ -495,7 +503,29 @@ export class TravelOrchestrator {
       guests = parseInt(guestMatch[1], 10);
     }
 
-    return { destination, origin, startDate, endDate, guests };
+    // Detect flight schedule/timing preferences
+    if (lower.includes('morning') || lower.includes('early') || lower.includes('before noon') || lower.includes('am flight')) {
+      timePreference = 'morning';
+    } else if (lower.includes('afternoon') || lower.includes('midday')) {
+      timePreference = 'afternoon';
+    } else if (lower.includes('evening') || lower.includes('after 5pm') || lower.includes('dusk')) {
+      timePreference = 'evening';
+    } else if (lower.includes('night') || lower.includes('red-eye') || lower.includes('late')) {
+      timePreference = 'night';
+    }
+
+    // Detect cabin class preference
+    if (lower.includes('first class') || lower.includes('first')) {
+      preferredCabin = 'First Class';
+    } else if (lower.includes('business class') || lower.includes('business')) {
+      preferredCabin = 'Business';
+    } else if (lower.includes('premium economy') || lower.includes('premium')) {
+      preferredCabin = 'Premium Economy';
+    } else if (lower.includes('economy')) {
+      preferredCabin = 'Economy';
+    }
+
+    return { destination, origin, startDate, endDate, guests, timePreference, preferredCabin };
   }
 
   private async saveBotMessage(sessionId: string, content: string, metadata?: any) {

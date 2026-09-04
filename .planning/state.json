@@ -6,7 +6,7 @@
     {
       "number": "1",
       "name": "Flight Cabin Class Selection & Schedule Enhancements",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "number": "2",
@@ -35,7 +35,7 @@
     },
     {
       "number": "7",
-      "name": "Payment Handoff & Dual-Mode Printable Summary",
+      "name": "Booking.com Payment Integration & Dual-Mode Printable Summary",
       "status": "pending"
     },
     {
@@ -46,8 +46,8 @@
   ],
   "next": {
     "command": "/gsd-progress --next",
-    "label": "Advance to the next step (plan phase 1)",
-    "reason": "Phase 1 of 8 — needs a plan"
+    "label": "Advance to the next step (plan phase 2)",
+    "reason": "Phase 2 of 8 — needs a plan"
   },
-  "updated_at": "2026-09-03T10:23:15.182Z"
+  "updated_at": "2026-09-04T10:21:54.680Z"
 }

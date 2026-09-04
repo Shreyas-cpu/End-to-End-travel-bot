@@ -6,12 +6,14 @@
 ## v1 Requirements
 
 ### Flight Discovery & Selection (FLT)
-- [ ] **FLT-01**: Conversational entity extraction for origin, destination, departure date, return date, and optional time preferences (e.g. morning/evening).
-- [ ] **FLT-02**: Flight search display showing airline, flight number, departure/arrival times, duration, stops, and pricing.
-- [ ] **FLT-03**: Flight cabin class selector & sorting (Economy, Premium Economy, Business, First Class) with live price adjustment.
-- [ ] **FLT-04**: Interactive flight selection card triggering state transition to Hotel stage.
+
+- [x] **FLT-01**: Conversational entity extraction for origin, destination, departure date, return date, and optional time preferences (e.g. morning/evening).
+- [x] **FLT-02**: Flight search display showing airline, flight number, departure/arrival times, duration, stops, and pricing.
+- [x] **FLT-03**: Flight cabin class selector & sorting (Economy, Premium Economy, Business, First Class) with live price adjustment.
+- [x] **FLT-04**: Interactive flight selection card triggering state transition to Hotel stage.
 
 ### Hotel Booking & Rich Filtering (HTL)
+
 - [ ] **HTL-01**: Chatbot prompts user if they would like to book a hotel upon flight confirmation.
 - [ ] **HTL-02**: Preferred location prompt with automatic default to "near the airport" if unspecified.
 - [ ] **HTL-03**: Hotel card with multi-photo scrollable carousel, star ratings (1-5★), review scores, and per-night rate.
@@ -23,6 +25,7 @@
 - [ ] **HTL-06**: Pagination limiting initial display to top 6 accommodations with a "See More" button to append remaining options.
 
 ### Ground Transfers & Cabs (CAB)
+
 - [ ] **CAB-01**: Chatbot prompts user for airport transfer preference with clear Yes/No selection.
 - [ ] **CAB-02**: Multi-routing options:
   - Airport to Hotel
@@ -32,6 +35,7 @@
 - [ ] **CAB-04**: Option to skip transfer without penalizing itinerary flow.
 
 ### Checkout, Payment & Printable Summary (SUM)
+
 - [ ] **SUM-01**: Comprehensive Trip Summary aggregating flight, hotel, and transfer costs with 12% itemized taxes & service fees.
 - [ ] **SUM-02**: "Proceed to Payment" action executing Booking.com Payments API checkout flow (with fallback mock payment session when credentials pending).
 - [ ] **SUM-03**: Booking reference generation and persistence to Prisma database.
@@ -39,6 +43,7 @@
 - [ ] **SUM-05**: Direct in-browser printing trigger (`window.print` / printable layout view) alongside instant PDF download.
 
 ### Admin Dashboard & API Management (ADM)
+
 - [ ] **ADM-01**: Dedicated Admin portal accessible via direct login link (`/admin`).
 - [ ] **ADM-02**: Admin authentication with secure password check and session storage.
 - [ ] **ADM-03**: API key configuration interface for:
@@ -51,11 +56,13 @@
 - [ ] **ADM-07**: Booking.com Payments API credentials management — dedicated slots for Booking.com Payment API Key, Merchant ID / Secret, and Payment Mode (Live / Mock).
 
 ### RAG Domain Restriction & LLM Guardrails (RAG)
+
 - [ ] **RAG-01**: Domain restriction prompt guardrail preventing non-travel queries and gracefully re-steering to trip planning.
 - [ ] **RAG-02**: Context-augmented knowledge retrieval ingesting travel rules, baggage allowances, cancellation terms, and transit guidance.
 - [ ] **RAG-03**: Deterministic rule fallback ensuring continuous workflow progression if LLM API rate limits or network issues occur.
 
 ### User Personalization via Markdown Profiles (PRF)
+
 - [ ] **PRF-01**: Dedicated Markdown profile storage per user (`data/profiles/{userId}.md`).
 - [ ] **PRF-02**: Structured extraction and logging of user travel preferences (seat preference, hotel amenities, preferred airlines, budget level, past destinations).
 - [ ] **PRF-03**: Dynamic profile injection into Gemini/LLM prompt context for hyper-personalized recommendations and pre-selected filters.

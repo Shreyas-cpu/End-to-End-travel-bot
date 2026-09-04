@@ -199,16 +199,32 @@ function renderCards(cards) {
 
   if (cards.type === 'flights' && Array.isArray(cards.data)) {
     window.cachedFlights = cards.data;
+    const cabinList = ['Economy', 'Premium Economy', 'Business', 'First Class'];
+    const periodBadges = {
+      morning: '🌅 Morning',
+      afternoon: '🌤️ Afternoon',
+      evening: '🌆 Evening',
+      night: '🌙 Night'
+    };
+
     return `
       <div class="cards-grid">
-        ${cards.data.map((flight, idx) => `
+        ${cards.data.map((flight, idx) => {
+          const currentCabin = flight.selectedCabin || flight.cabinClass || 'Economy';
+          const currentPrice = (flight.cabinTiers && flight.cabinTiers[currentCabin]) ? flight.cabinTiers[currentCabin] : flight.price;
+          const periodText = flight.departurePeriod ? (periodBadges[flight.departurePeriod] || flight.departurePeriod) : '';
+
+          return `
           <div class="flight-card" data-flight-id="${flight.id}">
             <div class="flight-card-header">
               <div class="airline-badge">
                 <div class="airline-icon"><i class="fa-solid fa-plane"></i></div>
                 <span>${escapeHtml(flight.airline)}</span>
               </div>
-              <span class="cabin-pill">${escapeHtml(flight.cabinClass)}</span>
+              <div class="flight-header-meta">
+                <span class="flight-num-pill">${escapeHtml(flight.flightNumber)}</span>
+                ${periodText ? `<span class="period-pill">${periodText}</span>` : ''}
+              </div>
             </div>
 
             <div class="flight-route-row">
@@ -227,14 +243,37 @@ function renderCards(cards) {
               </div>
             </div>
 
+            <!-- Cabin Class Selector Tabs -->
+            <div class="cabin-tier-selector">
+              <div class="cabin-selector-label">Select Cabin Class:</div>
+              <div class="cabin-pills-row">
+                ${cabinList.map(cabin => {
+                  const tierFare = flight.cabinTiers ? flight.cabinTiers[cabin] : null;
+                  const isActive = cabin === currentCabin;
+                  return `
+                    <button 
+                      type="button"
+                      class="cabin-tier-pill ${isActive ? 'active' : ''}" 
+                      data-cabin="${cabin}" 
+                      onclick="handleCabinClassChange(${idx}, '${cabin}')"
+                      title="${cabin}${tierFare ? ` ($${tierFare} USD)` : ''}"
+                    >
+                      <span>${cabin === 'Premium Economy' ? 'Premium' : cabin === 'First Class' ? 'First' : cabin}</span>
+                      ${tierFare ? `<span class="tier-fare-sub">$${tierFare}</span>` : ''}
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+
             <div class="flight-card-footer">
-              <div class="card-price">$${flight.price} <span>USD / person</span></div>
+              <div class="card-price" id="price-flight-${idx}">$${currentPrice} <span>USD / person</span></div>
               <button class="btn-card-select" onclick="handleSelectFlight(${idx})">
                 Select <i class="fa-solid fa-arrow-right"></i>
               </button>
             </div>
           </div>
-        `).join('')}
+        `}).join('')}
       </div>
     `;
   }
@@ -408,12 +447,42 @@ function attachCardActionHandlers(container) {
 }
 
 // Action Trigger Handlers
+window.handleCabinClassChange = function(flightIdx, cabinName) {
+  const flight = window.cachedFlights ? window.cachedFlights[flightIdx] : null;
+  if (!flight || !flight.cabinTiers) return;
+
+  flight.selectedCabin = cabinName;
+  const newPrice = flight.cabinTiers[cabinName] || flight.price;
+  flight.price = newPrice;
+
+  // Update card UI
+  const card = document.querySelector(`.flight-card[data-flight-id="${flight.id}"]`);
+  if (!card) return;
+
+  // Update active pill state
+  card.querySelectorAll('.cabin-tier-pill').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-cabin') === cabinName);
+  });
+
+  // Update displayed price
+  const priceEl = card.querySelector('.card-price');
+  if (priceEl) {
+    priceEl.innerHTML = `$${newPrice} <span>USD / person (${cabinName})</span>`;
+  }
+};
+
 window.handleSelectFlight = function(idx) {
   const flight = window.cachedFlights ? window.cachedFlights[idx] : null;
   if (!flight) return;
-  sendMessage(`Selected Flight: ${flight.airline} (${flight.flightNumber})`, {
+  const chosenCabin = flight.selectedCabin || flight.cabinClass || 'Economy';
+  const chosenPrice = (flight.cabinTiers && flight.cabinTiers[chosenCabin]) ? flight.cabinTiers[chosenCabin] : flight.price;
+  const updatedFlight = { ...flight, cabinClass: chosenCabin, price: chosenPrice };
+
+  sendMessage(`Selected Flight: ${flight.airline} (${flight.flightNumber}) — ${chosenCabin} ($${chosenPrice} USD)`, {
     action: 'SELECT_FLIGHT',
-    item: flight
+    item: updatedFlight,
+    cabinClass: chosenCabin,
+    price: chosenPrice
   });
 };
 

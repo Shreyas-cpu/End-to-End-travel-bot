@@ -1,3 +1,5 @@
+export type CabinClass = 'Economy' | 'Premium Economy' | 'Business' | 'First Class';
+
 export interface FlightOffer {
   id: string;
   airline: string;
@@ -13,7 +15,10 @@ export interface FlightOffer {
   arrivalTime: string;
   duration: string;
   stops: number;
-  cabinClass: string;
+  cabinClass: CabinClass;
+  cabinTiers: Record<CabinClass, number>;
+  departurePeriod: 'morning' | 'afternoon' | 'evening' | 'night';
+  flightTimePreference?: string;
   price: number;
   currency: string;
 }
@@ -61,6 +66,8 @@ export interface TravelSearchQuery {
   endDate?: string;
   guests?: number;
   budget?: number;
+  timePreference?: string;
+  preferredCabin?: CabinClass;
 }
 
 export interface BookingDetails {

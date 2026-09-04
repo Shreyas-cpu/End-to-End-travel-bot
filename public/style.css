@@ -486,12 +486,91 @@ h1, h2, h3, h4, .brand-text h2, .step-name {
   font-size: 13px;
 }
 
-.cabin-pill {
+.flight-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.flight-num-pill {
   font-size: 11px;
   background: rgba(255, 255, 255, 0.06);
   padding: 3px 8px;
   border-radius: var(--radius-full);
   color: var(--text-muted);
+  font-weight: 600;
+}
+
+.period-pill {
+  font-size: 10px;
+  background: rgba(59, 130, 246, 0.12);
+  color: #93C5FD;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  font-weight: 600;
+}
+
+.cabin-tier-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.cabin-selector-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cabin-pills-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.cabin-tier-pill {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 6px 4px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  transition: all 0.2s ease;
+}
+
+.cabin-tier-pill:hover {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: var(--text-primary);
+}
+
+.cabin-tier-pill.active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(99, 102, 241, 0.25));
+  border-color: var(--primary);
+  color: #60A5FA;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.25);
+}
+
+.tier-fare-sub {
+  font-size: 9px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.cabin-tier-pill.active .tier-fare-sub {
+  color: #BFDBFE;
+  font-weight: 700;
 }
 
 .flight-route-row {
