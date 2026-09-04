@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import { travelOrchestrator } from './services/orchestrator';
 import { userProfileService } from './services/userProfileService';
+import { travelRAGService } from './services/ragService';
 
 dotenv.config();
 
@@ -142,6 +143,23 @@ app.post('/api/user/profile/:userId?', async (req: Request, res: Response) => {
   } catch (err: any) {
     res.status(500).json({ error: 'Failed to update profile preferences', details: err.message });
   }
+});
+
+/**
+ * Travel Knowledge Base RAG Search & Guardrail Test Endpoint
+ */
+app.get('/api/rag/search', (req: Request, res: Response) => {
+  const query = (req.query.q as string) || '';
+  const guardrail = travelRAGService.isTravelRelated(query);
+  const chunks = travelRAGService.retrieve(query, 3);
+  const answer = travelRAGService.answerTravelInquiry(query);
+
+  res.json({
+    query,
+    guardrail,
+    chunks,
+    answer
+  });
 });
 
 /**

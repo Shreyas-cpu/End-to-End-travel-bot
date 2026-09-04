@@ -57,9 +57,9 @@
 
 ### RAG Domain Restriction & LLM Guardrails (RAG)
 
-- [ ] **RAG-01**: Domain restriction prompt guardrail preventing non-travel queries and gracefully re-steering to trip planning.
-- [ ] **RAG-02**: Context-augmented knowledge retrieval ingesting travel rules, baggage allowances, cancellation terms, and transit guidance.
-- [ ] **RAG-03**: Deterministic rule fallback ensuring continuous workflow progression if LLM API rate limits or network issues occur.
+- [x] **RAG-01**: Domain restriction prompt guardrail preventing non-travel queries and gracefully re-steering to trip planning.
+- [x] **RAG-02**: Context-augmented knowledge retrieval ingesting travel rules, baggage allowances, cancellation terms, and transit guidance.
+- [x] **RAG-03**: Deterministic rule fallback ensuring continuous workflow progression if LLM API rate limits or network issues occur.
 
 ### User Personalization via Markdown Profiles (PRF)
 

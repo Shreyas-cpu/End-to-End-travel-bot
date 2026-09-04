@@ -5,6 +5,7 @@ import { cabTransferProvider } from '../providers/cab/transferProvider';
 import { pdfTicketGenerator } from './pdfGenerator';
 import { geminiService } from './geminiService';
 import { userProfileService } from './userProfileService';
+import { travelRAGService } from './ragService';
 import { FlightOffer, HotelAccommodation, CabTransfer, BookingDetails } from '../providers/types';
 
 const prisma = new PrismaClient();
@@ -77,6 +78,34 @@ export class TravelOrchestrator {
     // Handle interactive card actions (e.g. user clicked "Select Flight", "Select Hotel", etc.)
     if (actionPayload?.action) {
       return this.handleActionPayload(session, cleanInput, actionPayload);
+    }
+
+    // Domain Guardrail: ensure query is travel-related
+    const guardrail = travelRAGService.isTravelRelated(cleanInput);
+    if (!guardrail.allowed) {
+      const declineReply = guardrail.suggestedPrompt || 
+        "✈️ I am specialized exclusively as your Travel Booking AI Assistant. I can assist you with flights, hotels, airport cabs, and travel guidelines (baggage, visas, airports). How may I help you with your journey today?";
+      await this.saveBotMessage(session.id, declineReply);
+      return {
+        sessionId: session.id,
+        reply: declineReply,
+        step: session.currentStep
+      };
+    }
+
+    // Knowledge Inquiry: check if user is asking general travel advisory questions
+    if (cleanInput.includes('baggage') || cleanInput.includes('luggage') || cleanInput.includes('visa') || 
+        cleanInput.includes('passport') || cleanInput.includes('check-in time') || cleanInput.includes('etias') ||
+        cleanInput.includes('schengen') || cleanInput.includes('tourist tax')) {
+      const advisory = travelRAGService.answerTravelInquiry(cleanInput);
+      if (advisory) {
+        await this.saveBotMessage(session.id, advisory);
+        return {
+          sessionId: session.id,
+          reply: advisory,
+          step: session.currentStep
+        };
+      }
     }
 
     // Main conversational state machine
