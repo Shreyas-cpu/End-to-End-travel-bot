@@ -211,7 +211,7 @@ export class TravelOrchestrator {
       guests: session.guests || 2
     });
 
-    const defaultReply = `✅ **Flight Selected**: ${flight.airline} (${flight.flightNumber}) — **${flight.cabinClass || 'Economy'}** for $${flight.price} USD.\n\n🏨 Next, let's pick your stay in **${session.destination || 'Paris'}**. Here are top-rated accommodations via **Booking.com Demand API**:`;
+    const defaultReply = `✅ **Flight Selected**: ${flight.airline} (${flight.flightNumber}) — **${flight.cabinClass || 'Economy'}** for $${flight.price} USD.\n\n🏨 Would you like to book a hotel for your stay in **${session.destination || 'Paris'}**? By default, I've prioritized options **near the airport** (sorted lowest to highest price). Use the filter toolbar to adjust sorting, select neighborhood areas, or filter by your max price:`;
     
     const reply = await this.generateAIResponse('HOTEL_SELECTION', {
       selectedFlight: flight.airline,
@@ -236,6 +236,10 @@ export class TravelOrchestrator {
    * Handle Stage 3: Hotel selection -> Cab transfer search
    */
   private async handleHotelSelectionStep(session: any, input: string): Promise<ChatResponse> {
+    if (input.toLowerCase().includes('skip') || input.toLowerCase().includes('no hotel')) {
+      return this.proceedToCabSelection(session, undefined);
+    }
+
     const hotels = await bookingComProvider.searchAccommodations({
       destination: session.destination || 'Paris',
       startDate: session.startDate || '2026-10-12',
@@ -244,23 +248,23 @@ export class TravelOrchestrator {
     });
 
     let chosenHotel = hotels[0];
-    if (input.includes('2') || input.toLowerCase().includes('saint-germain') || input.toLowerCase().includes('boutique')) {
+    if (input.includes('2') || input.toLowerCase().includes('citizenm')) {
       chosenHotel = hotels[1] || hotels[0];
-    } else if (input.includes('3') || input.toLowerCase().includes('citizenm') || input.toLowerCase().includes('smart')) {
+    } else if (input.includes('3') || input.toLowerCase().includes('hilton')) {
       chosenHotel = hotels[2] || hotels[0];
     }
 
     return this.proceedToCabSelection(session, chosenHotel);
   }
 
-  private async proceedToCabSelection(session: any, hotel: HotelAccommodation): Promise<ChatResponse> {
-    const preview = await bookingComProvider.previewOrder(hotel);
+  private async proceedToCabSelection(session: any, hotel?: HotelAccommodation): Promise<ChatResponse> {
+    const preview = hotel ? await bookingComProvider.previewOrder(hotel) : null;
 
     await prisma.session.update({
       where: { id: session.id },
       data: {
-        selectedHotelId: JSON.stringify(hotel),
-        orderToken: preview.orderToken,
+        selectedHotelId: hotel ? JSON.stringify(hotel) : null,
+        orderToken: preview ? preview.orderToken : null,
         currentStep: 'CAB_SELECTION'
       }
     });
@@ -268,10 +272,12 @@ export class TravelOrchestrator {
     // Propose airport transfers
     const transfers = await cabTransferProvider.getTransferOptions(session.destination || 'Paris', hotel);
 
-    const defaultReply = `✅ **Hotel Reserved**: ${hotel.name} (${hotel.starRating}★) for $${hotel.totalPrice} USD.\n\n🚕 Would you like an airport transfer from **${session.destination || 'Paris'} International Airport** directly to **${hotel.name}**?`;
+    const defaultReply = hotel
+      ? `✅ **Hotel Reserved**: ${hotel.name} (${hotel.starRating}★) for $${hotel.totalPrice} USD.\n\n🚕 Would you like an airport transfer from **${session.destination || 'Paris'} International Airport** directly to **${hotel.name}**?`
+      : `⏭️ Hotel reservation skipped.\n\n🚕 Would you like an airport transfer or cab service in **${session.destination || 'Paris'}**?`;
     
     const reply = await this.generateAIResponse('CAB_SELECTION', {
-      hotelName: hotel.name,
+      hotelName: hotel ? hotel.name : 'Skipped',
       destination: session.destination,
       transferOptions: transfers.length
     }, defaultReply);
@@ -457,6 +463,8 @@ export class TravelOrchestrator {
       return this.proceedToHotelSelection(session, flight);
     } else if (action === 'SELECT_HOTEL') {
       return this.proceedToCabSelection(session, item);
+    } else if (action === 'SKIP_HOTEL') {
+      return this.proceedToCabSelection(session, undefined);
     } else if (action === 'SELECT_CAB') {
       return this.proceedToCheckoutSummary(session, item);
     } else if (action === 'SKIP_CAB') {

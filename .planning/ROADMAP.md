@@ -7,7 +7,7 @@ This roadmap establishes a comprehensive 8-phase implementation plan transformin
 ## Phases
 
 - [x] **Phase 1: Flight Cabin Class Selection & Schedule Enhancements** - Implement cabin class filtering (Economy, Premium Economy, Business, First), timing filters, and interactive sorting. (completed 2026-09-04)
-- [ ] **Phase 2: Hotel Carousel, Advanced Filter Toolbar & Pagination** - Build photo carousels, "near airport" default logic, price/area filters, max price slider, and 6-item pagination with "See More".
+- [x] **Phase 2: Hotel Carousel, Advanced Filter Toolbar & Pagination** - Build photo carousels, "near airport" default logic, price/area filters, max price slider, and 6-item pagination with "See More". (completed 2026-09-04)
 - [ ] **Phase 3: Expanded Cab Transfer Routing (Airport-Hotel, Hotel-Airport, Custom)** - Provide Yes/No transfer prompt and multi-directional route options.
 - [ ] **Phase 4: User Profile Engine (`.md` Personalization)** - Implement user profile markdown manager, recording preferences and injecting them into recommendation prompts.
 - [ ] **Phase 5: RAG Engine & Travel Domain Guardrails** - Build travel knowledge index and enforce guardrail prompts to keep LLM strictly on-topic.

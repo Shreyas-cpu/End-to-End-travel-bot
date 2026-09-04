@@ -33,6 +33,9 @@ export interface HotelAccommodation {
   reviewCount: number;
   reviewRatingText: string;
   imageUrl: string;
+  images: string[];
+  area: 'Near Airport' | 'City Center' | 'Downtown' | 'Historic' | 'Suburbs';
+  distanceToAirport?: string;
   roomType: string;
   bedConfig: string;
   pricePerNight: number;

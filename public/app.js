@@ -280,37 +280,12 @@ function renderCards(cards) {
 
   if (cards.type === 'hotels' && Array.isArray(cards.data)) {
     window.cachedHotels = cards.data;
+    if (!window.hotelFilters) {
+      window.hotelFilters = { sort: 'asc', area: 'all', maxPrice: 400, limit: 6 };
+    }
     return `
-      <div class="cards-grid">
-        ${cards.data.map((hotel, idx) => `
-          <div class="hotel-card" data-hotel-id="${hotel.id}">
-            <div class="hotel-img-container">
-              <img src="${hotel.imageUrl}" alt="${escapeHtml(hotel.name)}" class="hotel-img" loading="lazy" />
-              <div class="hotel-partner-badge"><i class="fa-solid fa-b"></i> Booking.com</div>
-              <div class="hotel-rating-badge">★ ${hotel.starRating} Stars</div>
-            </div>
-            <div class="hotel-body">
-              <div class="hotel-name">${escapeHtml(hotel.name)}</div>
-              <div class="hotel-location"><i class="fa-solid fa-location-dot"></i> ${escapeHtml(hotel.address)}</div>
-              
-              <div class="bkg-review-box">
-                <span class="review-score">${hotel.reviewScore}</span>
-                <span class="review-label">${hotel.reviewRatingText}</span>
-                <span class="review-count">(${hotel.reviewCount.toLocaleString()} reviews)</span>
-              </div>
-
-              <div class="amenities-row">
-                ${hotel.amenities.slice(0, 3).map(a => `<span class="amenity-tag">${escapeHtml(a)}</span>`).join('')}
-              </div>
-            </div>
-            <div class="hotel-footer">
-              <div class="card-price">$${hotel.pricePerNight} <span>/ night ($${hotel.totalPrice} total)</span></div>
-              <button class="btn-card-select" onclick="handleSelectHotel(${idx})">
-                Select Stay <i class="fa-solid fa-arrow-right"></i>
-              </button>
-            </div>
-          </div>
-        `).join('')}
+      <div class="hotel-module-wrapper" id="hotelModuleWrapper">
+        ${renderHotelModuleContent(cards.data)}
       </div>
     `;
   }
@@ -483,6 +458,221 @@ window.handleSelectFlight = function(idx) {
     item: updatedFlight,
     cabinClass: chosenCabin,
     price: chosenPrice
+  });
+};
+
+// Hotel Module Rendering & Interactive Filter Handlers
+function renderHotelModuleContent(hotels) {
+  if (!window.hotelFilters) {
+    window.hotelFilters = { sort: 'asc', area: 'all', maxPrice: 400, limit: 6 };
+  }
+  const { sort, area, maxPrice, limit } = window.hotelFilters;
+
+  // Filter
+  let filtered = hotels.filter(h => {
+    const matchesPrice = h.pricePerNight <= maxPrice;
+    const matchesArea = area === 'all' || (h.area && h.area.toLowerCase().includes(area.toLowerCase()));
+    return matchesPrice && matchesArea;
+  });
+
+  // Sort
+  filtered.sort((a, b) => {
+    return sort === 'asc' ? a.pricePerNight - b.pricePerNight : b.pricePerNight - a.pricePerNight;
+  });
+
+  const visibleHotels = filtered.slice(0, limit);
+  const hasMore = filtered.length > limit;
+
+  return `
+    <div class="hotel-filter-toolbar">
+      <div class="filter-controls-row">
+        <div class="filter-group">
+          <span class="filter-group-label"><i class="fa-solid fa-arrow-down-up-across-line"></i> Price Sort:</span>
+          <div class="filter-sort-buttons">
+            <button type="button" class="btn-filter-sort ${sort === 'asc' ? 'active' : ''}" onclick="handleHotelSort('asc')">
+              <i class="fa-solid fa-arrow-down-short-wide"></i> Low ➔ High
+            </button>
+            <button type="button" class="btn-filter-sort ${sort === 'desc' ? 'active' : ''}" onclick="handleHotelSort('desc')">
+              <i class="fa-solid fa-arrow-up-wide-short"></i> High ➔ Low
+            </button>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <span class="filter-group-label"><i class="fa-solid fa-map-location-dot"></i> Area:</span>
+          <select class="filter-select" id="hotelAreaSelect" onchange="handleHotelAreaFilter(this.value)">
+            <option value="all" ${area === 'all' ? 'selected' : ''}>All Locations</option>
+            <option value="Near Airport" ${area === 'Near Airport' ? 'selected' : ''}>✈️ Near Airport (Default)</option>
+            <option value="City Center" ${area === 'City Center' ? 'selected' : ''}>🏙️ City Center</option>
+            <option value="Downtown" ${area === 'Downtown' ? 'selected' : ''}>🌆 Downtown</option>
+            <option value="Historic" ${area === 'Historic' ? 'selected' : ''}>🏛️ Historic District</option>
+          </select>
+        </div>
+
+        <div class="filter-group filter-slider-group">
+          <span class="filter-group-label"><i class="fa-solid fa-sliders"></i> Max Rate:</span>
+          <input 
+            type="range" 
+            class="price-range-slider" 
+            min="80" 
+            max="400" 
+            step="10" 
+            value="${maxPrice}" 
+            oninput="handleHotelPriceSlider(this.value)"
+          />
+          <span class="slider-val-badge" id="hotelSliderValBadge">$${maxPrice} / night</span>
+        </div>
+      </div>
+
+      <div class="filter-stats-bar">
+        <span>Showing <strong>${visibleHotels.length}</strong> of <strong>${filtered.length}</strong> matching stays (${hotels.length} total)</span>
+        <button type="button" class="btn-skip-hotel" onclick="handleSkipHotel()">Skip Hotel Reservation ➔</button>
+      </div>
+    </div>
+
+    <div class="cards-grid">
+      ${visibleHotels.map((hotel) => {
+        const originalIdx = window.cachedHotels.indexOf(hotel);
+        const images = hotel.images && hotel.images.length > 0 ? hotel.images : [hotel.imageUrl];
+        const currentIdx = hotel.currentImgIdx || 0;
+        const currentImg = images[currentIdx] || hotel.imageUrl;
+
+        return `
+        <div class="hotel-card" data-hotel-id="${hotel.id}">
+          <div class="hotel-carousel-container">
+            <img src="${currentImg}" alt="${escapeHtml(hotel.name)}" class="hotel-carousel-img" loading="lazy" />
+            
+            ${images.length > 1 ? `
+              <button type="button" class="carousel-btn prev" onclick="handleHotelPrevImage(event, ${originalIdx})" title="Previous photo">
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              <button type="button" class="carousel-btn next" onclick="handleHotelNextImage(event, ${originalIdx})" title="Next photo">
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+              <div class="carousel-dots">
+                ${images.map((_, dotIdx) => `
+                  <span class="carousel-dot ${dotIdx === currentIdx ? 'active' : ''}"></span>
+                `).join('')}
+              </div>
+            ` : ''}
+
+            <div class="hotel-partner-badge"><i class="fa-solid fa-b"></i> Booking.com</div>
+            <div class="hotel-rating-badge">★ ${hotel.starRating} Stars</div>
+            ${hotel.area ? `<div class="hotel-area-badge">${hotel.area === 'Near Airport' ? '✈️ ' : ''}${escapeHtml(hotel.area)}</div>` : ''}
+          </div>
+
+          <div class="hotel-body">
+            <div class="hotel-name">${escapeHtml(hotel.name)}</div>
+            <div class="hotel-location">
+              <i class="fa-solid fa-location-dot"></i> ${escapeHtml(hotel.address)}
+            </div>
+            ${hotel.distanceToAirport ? `<div class="hotel-distance-tag"><i class="fa-solid fa-plane-arrival"></i> ${escapeHtml(hotel.distanceToAirport)}</div>` : ''}
+
+            <div class="bkg-review-box">
+              <span class="review-score">${hotel.reviewScore}</span>
+              <span class="review-label">${hotel.reviewRatingText}</span>
+              <span class="review-count">(${hotel.reviewCount.toLocaleString()} reviews)</span>
+            </div>
+
+            <div class="amenities-row">
+              ${hotel.amenities.slice(0, 3).map(a => `<span class="amenity-tag">${escapeHtml(a)}</span>`).join('')}
+            </div>
+          </div>
+
+          <div class="hotel-footer">
+            <div class="card-price">$${hotel.pricePerNight} <span>/ night ($${hotel.totalPrice} total)</span></div>
+            <button type="button" class="btn-card-select" onclick="handleSelectHotel(${originalIdx})">
+              Select Stay <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+      `}).join('')}
+    </div>
+
+    ${hasMore ? `
+      <div class="hotel-pagination-container">
+        <button type="button" class="btn-see-more" onclick="handleHotelSeeMore()">
+          <i class="fa-solid fa-layer-group"></i> See More Accommodations (+${filtered.length - limit} more)
+        </button>
+      </div>
+    ` : ''}
+  `;
+}
+
+function updateHotelView() {
+  const container = document.getElementById('hotelModuleWrapper');
+  if (!container || !window.cachedHotels) return;
+  container.innerHTML = renderHotelModuleContent(window.cachedHotels);
+}
+
+window.handleHotelSort = function(sortDir) {
+  if (!window.hotelFilters) window.hotelFilters = { sort: 'asc', area: 'all', maxPrice: 400, limit: 6 };
+  window.hotelFilters.sort = sortDir;
+  updateHotelView();
+};
+
+window.handleHotelAreaFilter = function(area) {
+  if (!window.hotelFilters) window.hotelFilters = { sort: 'asc', area: 'all', maxPrice: 400, limit: 6 };
+  window.hotelFilters.area = area;
+  updateHotelView();
+};
+
+window.handleHotelPriceSlider = function(val) {
+  if (!window.hotelFilters) window.hotelFilters = { sort: 'asc', area: 'all', maxPrice: 400, limit: 6 };
+  window.hotelFilters.maxPrice = parseInt(val, 10);
+  const badge = document.getElementById('hotelSliderValBadge');
+  if (badge) badge.innerText = `$${val} / night`;
+  updateHotelView();
+};
+
+window.handleHotelSeeMore = function() {
+  if (!window.hotelFilters) window.hotelFilters = { sort: 'asc', area: 'all', maxPrice: 400, limit: 6 };
+  window.hotelFilters.limit += 6;
+  updateHotelView();
+};
+
+window.handleHotelPrevImage = function(e, hotelIdx) {
+  if (e) e.stopPropagation();
+  const hotel = window.cachedHotels ? window.cachedHotels[hotelIdx] : null;
+  if (!hotel) return;
+  const imgs = hotel.images && hotel.images.length > 0 ? hotel.images : [hotel.imageUrl];
+  if (imgs.length <= 1) return;
+
+  hotel.currentImgIdx = (hotel.currentImgIdx !== undefined ? hotel.currentImgIdx : 0) - 1;
+  if (hotel.currentImgIdx < 0) hotel.currentImgIdx = imgs.length - 1;
+
+  const card = document.querySelector(`.hotel-card[data-hotel-id="${hotel.id}"]`);
+  if (!card) return;
+  const imgEl = card.querySelector('.hotel-carousel-img');
+  if (imgEl) imgEl.src = imgs[hotel.currentImgIdx];
+
+  card.querySelectorAll('.carousel-dot').forEach((dot, dIdx) => {
+    dot.classList.toggle('active', dIdx === hotel.currentImgIdx);
+  });
+};
+
+window.handleHotelNextImage = function(e, hotelIdx) {
+  if (e) e.stopPropagation();
+  const hotel = window.cachedHotels ? window.cachedHotels[hotelIdx] : null;
+  if (!hotel) return;
+  const imgs = hotel.images && hotel.images.length > 0 ? hotel.images : [hotel.imageUrl];
+  if (imgs.length <= 1) return;
+
+  hotel.currentImgIdx = ((hotel.currentImgIdx !== undefined ? hotel.currentImgIdx : 0) + 1) % imgs.length;
+
+  const card = document.querySelector(`.hotel-card[data-hotel-id="${hotel.id}"]`);
+  if (!card) return;
+  const imgEl = card.querySelector('.hotel-carousel-img');
+  if (imgEl) imgEl.src = imgs[hotel.currentImgIdx];
+
+  card.querySelectorAll('.carousel-dot').forEach((dot, dIdx) => {
+    dot.classList.toggle('active', dIdx === hotel.currentImgIdx);
+  });
+};
+
+window.handleSkipHotel = function() {
+  sendMessage('Skip hotel reservation', {
+    action: 'SKIP_HOTEL'
   });
 };
 

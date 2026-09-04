@@ -14,15 +14,15 @@
 
 ### Hotel Booking & Rich Filtering (HTL)
 
-- [ ] **HTL-01**: Chatbot prompts user if they would like to book a hotel upon flight confirmation.
-- [ ] **HTL-02**: Preferred location prompt with automatic default to "near the airport" if unspecified.
-- [ ] **HTL-03**: Hotel card with multi-photo scrollable carousel, star ratings (1-5★), review scores, and per-night rate.
-- [ ] **HTL-04**: Default ordering of hotel options from lowest to highest per-night price.
-- [ ] **HTL-05**: Top filter toolbar above hotel cards with:
+- [x] **HTL-01**: Chatbot prompts user if they would like to book a hotel upon flight confirmation.
+- [x] **HTL-02**: Preferred location prompt with automatic default to "near the airport" if unspecified.
+- [x] **HTL-03**: Hotel card with multi-photo scrollable carousel, star ratings (1-5★), review scores, and per-night rate.
+- [x] **HTL-04**: Default ordering of hotel options from lowest to highest per-night price.
+- [x] **HTL-05**: Top filter toolbar above hotel cards with:
   - Price sort toggle (Low-to-High / High-to-Low).
   - Neighborhood/Area filter dropdown (Airport, City Center, Downtown, Beachfront).
   - Max price range slider with dynamic client-side filtering.
-- [ ] **HTL-06**: Pagination limiting initial display to top 6 accommodations with a "See More" button to append remaining options.
+- [x] **HTL-06**: Pagination limiting initial display to top 6 accommodations with a "See More" button to append remaining options.
 
 ### Ground Transfers & Cabs (CAB)
 
