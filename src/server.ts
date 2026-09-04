@@ -6,6 +6,7 @@ import { PrismaClient } from '@prisma/client';
 import { travelOrchestrator } from './services/orchestrator';
 import { userProfileService } from './services/userProfileService';
 import { travelRAGService } from './services/ragService';
+import { adminConfigService } from './services/adminConfigService';
 
 dotenv.config();
 
@@ -160,6 +161,49 @@ app.get('/api/rag/search', (req: Request, res: Response) => {
     chunks,
     answer
   });
+});
+
+/**
+ * Retrieve Admin Configuration (Masked)
+ */
+app.get('/api/admin/config', (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    config: adminConfigService.getMaskedConfig()
+  });
+});
+
+/**
+ * Update Admin Configuration
+ */
+app.post('/api/admin/config', (req: Request, res: Response) => {
+  try {
+    const updates = req.body;
+    const updated = adminConfigService.saveConfig(updates);
+    res.json({
+      success: true,
+      message: 'Admin configuration updated successfully',
+      config: adminConfigService.getMaskedConfig()
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to update admin configuration', details: err.message });
+  }
+});
+
+/**
+ * Test Provider Connectivity
+ */
+app.post('/api/admin/test-connection', async (req: Request, res: Response) => {
+  try {
+    const { provider } = req.body;
+    const result = await adminConfigService.testConnection(provider);
+    res.json({
+      success: true,
+      result
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Connection test failed', details: err.message });
+  }
 });
 
 /**

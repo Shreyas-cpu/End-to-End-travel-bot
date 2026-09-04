@@ -1,0 +1,16 @@
+{
+  "flightProvider": "mock",
+  "amadeusApiKey": "",
+  "amadeusApiSecret": "",
+  "hotelProvider": "booking_com",
+  "bookingComApiKey": "",
+  "bookingComAffiliateId": "",
+  "paymentsProvider": "mock",
+  "bookingComPaymentsApiKey": "live_pk_bkg_99218204812",
+  "paymentsEnvironment": "live",
+  "llmProvider": "gemini",
+  "geminiApiKey": "",
+  "geminiModel": "gemini-2.5-flash",
+  "cabProvider": "mock",
+  "updatedAt": "2026-09-04T10:43:09.980Z"
+}

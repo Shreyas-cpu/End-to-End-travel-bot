@@ -44,15 +44,15 @@
 
 ### Admin Dashboard & API Management (ADM)
 
-- [ ] **ADM-01**: Dedicated Admin portal accessible via direct login link (`/admin`).
-- [ ] **ADM-02**: Admin authentication with secure password check and session storage.
-- [ ] **ADM-03**: API key configuration interface for:
+- [x] **ADM-01**: Dedicated Admin portal accessible via direct login link (`/admin`).
+- [x] **ADM-02**: Admin authentication with secure password check and session storage.
+- [x] **ADM-03**: API key configuration interface for:
   - Booking.com Demand API Key & Affiliate ID.
   - Amadeus Flight API Key & Secret.
   - LLM Provider Selection (Google Gemini, OpenAI, Claude) & API Key slot.
-- [ ] **ADM-04**: Provider Mode Toggles: Independent "Mock" vs "Live" switches for Hotels, Flights, Cabs, and LLM.
-- [ ] **ADM-05**: Operational monitoring view: Live session logs, recent bookings list, and ticket inspection.
-- [ ] **ADM-06**: RAG Knowledge Base text editor for updating travel policies, airport guides, and FAQ content.
+- [x] **ADM-04**: Provider Mode Toggles: Independent "Mock" vs "Live" switches for Hotels, Flights, Cabs, and LLM.
+- [x] **ADM-05**: Operational monitoring view: Live session logs, recent bookings list, and ticket inspection.
+- [x] **ADM-06**: RAG Knowledge Base text editor for updating travel policies, airport guides, and FAQ content.
 - [ ] **ADM-07**: Booking.com Payments API credentials management — dedicated slots for Booking.com Payment API Key, Merchant ID / Secret, and Payment Mode (Live / Mock).
 
 ### RAG Domain Restriction & LLM Guardrails (RAG)
