@@ -15,6 +15,7 @@ export interface ChatResponse {
   cards?: {
     type: 'flights' | 'hotels' | 'cabs' | 'summary' | 'ticket' | 'help';
     data: any;
+    routeType?: string;
   };
 }
 
@@ -257,32 +258,58 @@ export class TravelOrchestrator {
     return this.proceedToCabSelection(session, chosenHotel);
   }
 
-  private async proceedToCabSelection(session: any, hotel?: HotelAccommodation): Promise<ChatResponse> {
+  private async proceedToCabSelection(
+    session: any, 
+    hotel?: HotelAccommodation, 
+    routeType: 'airport_to_hotel' | 'hotel_to_airport' | 'custom' = 'airport_to_hotel'
+  ): Promise<ChatResponse> {
     const preview = hotel ? await bookingComProvider.previewOrder(hotel) : null;
 
-    await prisma.session.update({
-      where: { id: session.id },
-      data: {
-        selectedHotelId: hotel ? JSON.stringify(hotel) : null,
-        orderToken: preview ? preview.orderToken : null,
-        currentStep: 'CAB_SELECTION'
-      }
-    });
+    if (hotel) {
+      await prisma.session.update({
+        where: { id: session.id },
+        data: {
+          selectedHotelId: JSON.stringify(hotel),
+          orderToken: preview ? preview.orderToken : null,
+          currentStep: 'CAB_SELECTION'
+        }
+      });
+    } else if (!session.selectedHotelId) {
+      await prisma.session.update({
+        where: { id: session.id },
+        data: {
+          currentStep: 'CAB_SELECTION'
+        }
+      });
+    }
 
-    // Propose airport transfers
-    const transfers = await cabTransferProvider.getTransferOptions(session.destination || 'Paris', hotel);
+    const currentHotel: HotelAccommodation | undefined = hotel || (session.selectedHotelId ? JSON.parse(session.selectedHotelId) : undefined);
 
-    const defaultReply = hotel
-      ? `✅ **Hotel Reserved**: ${hotel.name} (${hotel.starRating}★) for $${hotel.totalPrice} USD.\n\n🚕 Would you like an airport transfer from **${session.destination || 'Paris'} International Airport** directly to **${hotel.name}**?`
-      : `⏭️ Hotel reservation skipped.\n\n🚕 Would you like an airport transfer or cab service in **${session.destination || 'Paris'}**?`;
+    // Propose transfers for the specified route
+    const transfers = await cabTransferProvider.getTransferOptions(
+      session.destination || 'Paris', 
+      currentHotel, 
+      routeType
+    );
+
+    const routeLabel = routeType === 'hotel_to_airport' 
+      ? 'Hotel ➔ Airport' 
+      : routeType === 'custom' 
+        ? 'City / Custom Route' 
+        : 'Airport ➔ Hotel';
+
+    const defaultReply = currentHotel
+      ? `✅ **Hotel Confirmed**: ${currentHotel.name} (${currentHotel.starRating}★).\n\n🚕 **Cab Transfer Service**: Would you like to add an airport or city transfer? Currently showing **${routeLabel}** options below. You can easily switch between **Airport ➔ Hotel**, **Hotel ➔ Airport**, or **Custom Location**:`
+      : `⏭️ Hotel reservation skipped.\n\n🚕 **Cab Transfer Service**: Would you like to book a cab transfer in **${session.destination || 'Paris'}**? Currently showing **${routeLabel}** options:`;
     
     const reply = await this.generateAIResponse('CAB_SELECTION', {
-      hotelName: hotel ? hotel.name : 'Skipped',
+      hotelName: currentHotel ? currentHotel.name : 'Skipped',
       destination: session.destination,
+      routeType,
       transferOptions: transfers.length
     }, defaultReply);
 
-    await this.saveBotMessage(session.id, reply, { type: 'cabs', data: transfers });
+    await this.saveBotMessage(session.id, reply, { type: 'cabs', data: transfers, routeType });
 
     return {
       sessionId: session.id,
@@ -290,7 +317,8 @@ export class TravelOrchestrator {
       step: 'CAB_SELECTION',
       cards: {
         type: 'cabs',
-        data: transfers
+        data: transfers,
+        routeType
       }
     };
   }
@@ -299,16 +327,33 @@ export class TravelOrchestrator {
    * Handle Stage 4: Cab selection -> Checkout Summary
    */
   private async handleCabSelectionStep(session: any, input: string): Promise<ChatResponse> {
-    const hotel: HotelAccommodation = session.selectedHotelId ? JSON.parse(session.selectedHotelId) : undefined;
+    const hotel: HotelAccommodation | undefined = session.selectedHotelId ? JSON.parse(session.selectedHotelId) : undefined;
+    const lower = input.toLowerCase();
+
+    if (lower.includes('skip') || lower.includes('no cab') || lower.includes('no transfer') || lower.includes('no thanks')) {
+      return this.proceedToCheckoutSummary(session, undefined);
+    }
+
+    // Support route switching commands in chat
+    if (lower.includes('hotel to airport') || lower.includes('to airport') || lower.includes('return trip')) {
+      return this.proceedToCabSelection(session, hotel, 'hotel_to_airport');
+    }
+    if (lower.includes('airport to hotel') || lower.includes('from airport') || lower.includes('arrival')) {
+      return this.proceedToCabSelection(session, hotel, 'airport_to_hotel');
+    }
+    if (lower.includes('custom') || lower.includes('city') || lower.includes('landmark')) {
+      return this.proceedToCabSelection(session, hotel, 'custom');
+    }
+
     const transfers = await cabTransferProvider.getTransferOptions(session.destination || 'Paris', hotel);
 
     let chosenCab: CabTransfer | undefined = transfers[0];
-    if (input.toLowerCase().includes('skip') || input.toLowerCase().includes('no cab') || input.toLowerCase().includes('no transfer')) {
-      chosenCab = undefined;
-    } else if (input.includes('2') || input.toLowerCase().includes('executive') || input.toLowerCase().includes('mercedes')) {
+    if (lower.includes('2') || lower.includes('executive') || lower.includes('business') || lower.includes('mercedes')) {
       chosenCab = transfers[1];
-    } else if (input.includes('3') || input.toLowerCase().includes('van') || input.toLowerCase().includes('group')) {
+    } else if (lower.includes('electric') || lower.includes('tesla') || lower.includes('eco')) {
       chosenCab = transfers[2];
+    } else if (lower.includes('3') || lower.includes('4') || lower.includes('van') || lower.includes('group')) {
+      chosenCab = transfers[3];
     }
 
     return this.proceedToCheckoutSummary(session, chosenCab);
@@ -469,6 +514,9 @@ export class TravelOrchestrator {
       return this.proceedToCheckoutSummary(session, item);
     } else if (action === 'SKIP_CAB') {
       return this.proceedToCheckoutSummary(session, undefined);
+    } else if (action === 'SWITCH_CAB_ROUTE') {
+      const hotel: HotelAccommodation | undefined = session.selectedHotelId ? JSON.parse(session.selectedHotelId) : undefined;
+      return this.proceedToCabSelection(session, hotel, payload.routeType || 'airport_to_hotel');
     } else if (action === 'CONFIRM_BOOKING') {
       return this.handleCheckoutStep(session, 'confirm');
     }

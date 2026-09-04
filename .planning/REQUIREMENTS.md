@@ -26,13 +26,13 @@
 
 ### Ground Transfers & Cabs (CAB)
 
-- [ ] **CAB-01**: Chatbot prompts user for airport transfer preference with clear Yes/No selection.
-- [ ] **CAB-02**: Multi-routing options:
+- [x] **CAB-01**: Chatbot prompts user for airport transfer preference with clear Yes/No selection.
+- [x] **CAB-02**: Multi-routing options:
   - Airport to Hotel
   - Hotel to Airport
   - Custom pickup and drop-off points.
-- [ ] **CAB-03**: Vehicle cards displaying model, capacity, luggage allowance, driver rating, and flat-fare pricing.
-- [ ] **CAB-04**: Option to skip transfer without penalizing itinerary flow.
+- [x] **CAB-03**: Vehicle cards displaying model, capacity, luggage allowance, driver rating, and flat-fare pricing.
+- [x] **CAB-04**: Option to skip transfer without penalizing itinerary flow.
 
 ### Checkout, Payment & Printable Summary (SUM)
 

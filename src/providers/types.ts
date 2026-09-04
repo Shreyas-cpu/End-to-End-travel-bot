@@ -58,6 +58,7 @@ export interface CabTransfer {
   currency: string;
   pickupLocation: string;
   dropoffLocation: string;
+  routeType?: 'airport_to_hotel' | 'hotel_to_airport' | 'custom';
   driverRating: number;
   badge?: string;
 }

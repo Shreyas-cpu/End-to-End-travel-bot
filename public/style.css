@@ -1056,6 +1056,101 @@ h1, h2, h3, h4, .brand-text h2, .step-name {
   transform: translateY(-1px);
 }
 
+/* Cab Route Selection Toolbar */
+.cab-route-toolbar {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid var(--border-highlight);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cab-route-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cab-route-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cab-route-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.btn-cab-route {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.btn-cab-route:hover {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: var(--text-primary);
+}
+
+.btn-cab-route.active {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(217, 119, 6, 0.25));
+  border-color: #F59E0B;
+  color: #FCD34D;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+}
+
+.cab-route-active-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid #F59E0B;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.cab-route-node {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cab-route-node i {
+  font-size: 10px;
+}
+
+.cab-route-node.pickup i {
+  color: #34D399;
+}
+
+.cab-route-node.dropoff i {
+  color: #F87171;
+}
+
 /* Cab Card */
 .cab-card {
   background: var(--bg-card);
@@ -1098,6 +1193,16 @@ h1, h2, h3, h4, .brand-text h2, .step-name {
   font-size: 16px;
 }
 
+.cab-badge-pill {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #FCD34D;
+  font-weight: 700;
+}
+
 .cab-details h4 {
   font-size: 14px;
   font-weight: 700;
@@ -1106,6 +1211,17 @@ h1, h2, h3, h4, .brand-text h2, .step-name {
 .cab-details p {
   font-size: 11px;
   color: var(--text-muted);
+}
+
+.cab-route-summary-tag {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
 }
 
 .cab-meta-row {

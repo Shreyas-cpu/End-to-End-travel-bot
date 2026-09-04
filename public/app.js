@@ -292,38 +292,88 @@ function renderCards(cards) {
 
   if (cards.type === 'cabs' && Array.isArray(cards.data)) {
     window.cachedCabs = cards.data;
+    const currentRoute = cards.routeType || window.currentCabRoute || 'airport_to_hotel';
+    window.currentCabRoute = currentRoute;
+
+    const sampleCab = cards.data[0];
+    const pickupDisplay = sampleCab ? sampleCab.pickupLocation : 'Airport';
+    const dropoffDisplay = sampleCab ? sampleCab.dropoffLocation : 'Hotel';
+
     return `
+      <div class="cab-route-toolbar">
+        <div class="cab-route-header-row">
+          <span class="cab-route-title"><i class="fa-solid fa-route"></i> Select Transfer Direction:</span>
+        </div>
+        <div class="cab-route-buttons">
+          <button 
+            type="button" 
+            class="btn-cab-route ${currentRoute === 'airport_to_hotel' ? 'active' : ''}" 
+            onclick="handleSwitchCabRoute('airport_to_hotel')"
+          >
+            🛬 Airport ➔ Hotel
+          </button>
+          <button 
+            type="button" 
+            class="btn-cab-route ${currentRoute === 'hotel_to_airport' ? 'active' : ''}" 
+            onclick="handleSwitchCabRoute('hotel_to_airport')"
+          >
+            🛫 Hotel ➔ Airport
+          </button>
+          <button 
+            type="button" 
+            class="btn-cab-route ${currentRoute === 'custom' ? 'active' : ''}" 
+            onclick="handleSwitchCabRoute('custom')"
+          >
+            📍 City / Custom
+          </button>
+        </div>
+
+        <div class="cab-route-active-details">
+          <div class="cab-route-node pickup">
+            <i class="fa-solid fa-circle-dot"></i> <strong>Pickup:</strong> <span>${escapeHtml(pickupDisplay)}</span>
+          </div>
+          <div class="cab-route-node dropoff">
+            <i class="fa-solid fa-location-pin"></i> <strong>Drop-off:</strong> <span>${escapeHtml(dropoffDisplay)}</span>
+          </div>
+        </div>
+      </div>
+
       <div class="cards-grid">
         ${cards.data.map((cab, idx) => `
           <div class="cab-card" data-cab-id="${cab.id}">
             <div class="cab-header">
               <div class="cab-icon-badge">
-                <div class="cab-icon"><i class="fa-solid fa-car-side"></i></div>
+                <div class="cab-icon">
+                  <i class="${cab.vehicleType.includes('Van') ? 'fa-solid fa-van-shuttle' : cab.vehicleType.includes('Electric') ? 'fa-solid fa-bolt' : cab.vehicleType.includes('Executive') ? 'fa-solid fa-car' : 'fa-solid fa-car-side'}"></i>
+                </div>
                 <div class="cab-details">
                   <h4>${escapeHtml(cab.vehicleType)}</h4>
                   <p>${escapeHtml(cab.vehicleModel)}</p>
                 </div>
               </div>
-              <span class="pill-badge live">★ ${cab.driverRating}</span>
+              <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                <span class="pill-badge live">★ ${cab.driverRating}</span>
+                ${cab.badge ? `<span class="cab-badge-pill">${escapeHtml(cab.badge)}</span>` : ''}
+              </div>
             </div>
 
             <div class="cab-meta-row">
-              <span class="cab-meta-item"><i class="fa-solid fa-user-group"></i> Up to ${cab.capacity}</span>
+              <span class="cab-meta-item"><i class="fa-solid fa-user-group"></i> Up to ${cab.capacity} seats</span>
               <span class="cab-meta-item"><i class="fa-solid fa-suitcase"></i> ${cab.luggageCount} Bags</span>
               <span class="cab-meta-item"><i class="fa-solid fa-clock"></i> ${cab.estimatedDuration}</span>
             </div>
 
             <div class="cab-footer">
-              <div class="card-price">$${cab.price} <span>flat fare</span></div>
-              <button class="btn-card-select" onclick="handleSelectCab(${idx})">
+              <div class="card-price">$${cab.price} <span>fixed rate</span></div>
+              <button type="button" class="btn-card-select" onclick="handleSelectCab(${idx})">
                 Book Transfer <i class="fa-solid fa-check"></i>
               </button>
             </div>
           </div>
         `).join('')}
       </div>
-      <div style="margin-top: 10px; text-align: right;">
-        <button class="quick-chip" onclick="handleSkipCab()">Skip Airport Transfer ➔</button>
+      <div style="margin-top: 12px; text-align: right;">
+        <button type="button" class="quick-chip" onclick="handleSkipCab()">Skip Transfer Service ➔</button>
       </div>
     `;
   }
@@ -682,6 +732,20 @@ window.handleSelectHotel = function(idx) {
   sendMessage(`Selected Hotel: ${hotel.name}`, {
     action: 'SELECT_HOTEL',
     item: hotel
+  });
+};
+
+window.handleSwitchCabRoute = function(routeType) {
+  window.currentCabRoute = routeType;
+  const routeLabel = routeType === 'hotel_to_airport' 
+    ? 'Hotel to Airport' 
+    : routeType === 'custom' 
+      ? 'Custom Location' 
+      : 'Airport to Hotel';
+
+  sendMessage(`Switch cab route: ${routeLabel}`, {
+    action: 'SWITCH_CAB_ROUTE',
+    routeType: routeType
   });
 };
 
