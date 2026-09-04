@@ -63,6 +63,6 @@
 
 ### User Personalization via Markdown Profiles (PRF)
 
-- [ ] **PRF-01**: Dedicated Markdown profile storage per user (`data/profiles/{userId}.md`).
-- [ ] **PRF-02**: Structured extraction and logging of user travel preferences (seat preference, hotel amenities, preferred airlines, budget level, past destinations).
-- [ ] **PRF-03**: Dynamic profile injection into Gemini/LLM prompt context for hyper-personalized recommendations and pre-selected filters.
+- [x] **PRF-01**: Dedicated Markdown profile storage per user (`data/profiles/{userId}.md`).
+- [x] **PRF-02**: Structured extraction and logging of user travel preferences (seat preference, hotel amenities, preferred airlines, budget level, past destinations).
+- [x] **PRF-03**: Dynamic profile injection into Gemini/LLM prompt context for hyper-personalized recommendations and pre-selected filters.

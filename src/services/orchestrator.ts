@@ -4,6 +4,7 @@ import { bookingComProvider } from '../providers/hotel/bookingComProvider';
 import { cabTransferProvider } from '../providers/cab/transferProvider';
 import { pdfTicketGenerator } from './pdfGenerator';
 import { geminiService } from './geminiService';
+import { userProfileService } from './userProfileService';
 import { FlightOffer, HotelAccommodation, CabTransfer, BookingDetails } from '../providers/types';
 
 const prisma = new PrismaClient();
@@ -111,6 +112,11 @@ export class TravelOrchestrator {
     let aiExtracted = geminiService.isEnabled() ? await geminiService.extractTravelEntities(input) : {};
     const ruleExtracted = this.extractTripEntities(input);
 
+    // 2. Load persistent user profile
+    const profile = await userProfileService.getProfile('traveler_default');
+    const effectiveCabin = ruleExtracted.preferredCabin || profile.preferredCabin || 'Economy';
+    const effectiveTimePref = ruleExtracted.timePreference || profile.preferredDeparturePeriod;
+
     const destination = aiExtracted.destination || ruleExtracted.destination || session.destination || 'Paris';
     const origin = aiExtracted.origin || ruleExtracted.origin || session.origin || 'New York (JFK)';
     const startDate = aiExtracted.startDate || ruleExtracted.startDate || session.startDate || '2026-10-12';
@@ -135,12 +141,17 @@ export class TravelOrchestrator {
       startDate,
       endDate,
       guests,
-      timePreference: ruleExtracted.timePreference,
-      preferredCabin: ruleExtracted.preferredCabin
+      timePreference: effectiveTimePref,
+      preferredCabin: effectiveCabin
     });
 
-    const timePrefNotice = ruleExtracted.timePreference ? ` (${ruleExtracted.timePreference} departures prioritized)` : '';
-    const defaultReply = `✈️ Great! I found top flight options from **${origin}** to **${destination}** for **${startDate}** to **${endDate}** (${guests} traveler${guests > 1 ? 's' : ''})${timePrefNotice}.\n\nPlease select your preferred cabin class and flight to continue:`;
+    const timePrefNotice = effectiveTimePref ? ` (${effectiveTimePref} departures prioritized)` : '';
+    const isReturning = profile.bookingHistory && profile.bookingHistory.length > 0;
+    const greetingHeader = isReturning
+      ? `✈️ Welcome back, **${profile.displayName}**! Using your profile preferences (${effectiveCabin} cabin, ${effectiveTimePref || 'morning'} timing)`
+      : `✈️ Great! I found top flight options from **${origin}** to **${destination}**`;
+
+    const defaultReply = `${greetingHeader} for **${startDate}** to **${endDate}** (${guests} traveler${guests > 1 ? 's' : ''})${timePrefNotice}.\n\nPlease select your preferred cabin class and flight to continue:`;
     
     const reply = await this.generateAIResponse('FLIGHT_SELECTION', {
       origin,
@@ -450,6 +461,19 @@ export class TravelOrchestrator {
         pdfPath: pdfUrl
       }
     });
+
+    // Record into persistent User Markdown Profile
+    try {
+      await userProfileService.recordBooking('traveler_default', {
+        bookingReference,
+        destination: session.destination || 'Paris',
+        flight: flight ? { airline: flight.airline, flightNumber: flight.flightNumber, cabinClass: flight.cabinClass } : undefined,
+        hotel: hotel ? { name: hotel.name, area: hotel.area } : undefined,
+        totalCost
+      });
+    } catch (profileErr) {
+      console.warn('[UserProfileService] Failed to record booking into profile:', profileErr);
+    }
 
     await prisma.session.update({
       where: { id: session.id },

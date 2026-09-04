@@ -4,6 +4,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import { travelOrchestrator } from './services/orchestrator';
+import { userProfileService } from './services/userProfileService';
 
 dotenv.config();
 
@@ -101,6 +102,45 @@ app.get('/api/chat/history/:sessionId', async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('History fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch history' });
+  }
+});
+
+/**
+ * Retrieve User Profile (Parsed JSON and Markdown format)
+ */
+app.get('/api/user/profile/:userId?', async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.userId || 'traveler_default';
+    const profile = await userProfileService.getProfile(userId);
+    const markdown = userProfileService.serializeToMarkdown(profile);
+
+    res.json({
+      success: true,
+      profile,
+      markdown
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to retrieve profile', details: err.message });
+  }
+});
+
+/**
+ * Update User Profile Preferences
+ */
+app.post('/api/user/profile/:userId?', async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.userId || 'traveler_default';
+    const updates = req.body;
+    const updated = await userProfileService.updatePreferences(userId, updates);
+    const markdown = userProfileService.serializeToMarkdown(updated);
+
+    res.json({
+      success: true,
+      profile: updated,
+      markdown
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to update profile preferences', details: err.message });
   }
 });
 
