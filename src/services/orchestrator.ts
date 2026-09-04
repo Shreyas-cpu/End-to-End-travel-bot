@@ -6,6 +6,7 @@ import { pdfTicketGenerator } from './pdfGenerator';
 import { geminiService } from './geminiService';
 import { userProfileService } from './userProfileService';
 import { travelRAGService } from './ragService';
+import { bookingComPaymentProvider } from '../providers/payment/bookingComPaymentProvider';
 import { FlightOffer, HotelAccommodation, CabTransfer, BookingDetails } from '../providers/types';
 
 const prisma = new PrismaClient();
@@ -415,6 +416,13 @@ export class TravelOrchestrator {
     const taxesAndFees = Math.round(subtotal * 0.12 * 100) / 100;
     const totalCost = subtotal + taxesAndFees;
 
+    const paymentSession = await bookingComPaymentProvider.createPaymentSession({
+      bookingReference: `TRV-${Math.floor(100000 + Math.random() * 900000)}`,
+      totalCost,
+      currency: 'USD',
+      passengerEmail: 'alex.mercer@traveler.com'
+    });
+
     const summaryData = {
       flight,
       hotel,
@@ -425,10 +433,11 @@ export class TravelOrchestrator {
       subtotal,
       taxesAndFees,
       totalCost,
-      currency: 'USD'
+      currency: 'USD',
+      paymentSession
     };
 
-    const reply = `📋 Here is your complete **Trip Itinerary Summary** to **${session.destination}**! Please review the details below. Tap **Confirm & Generate E-Tickets** to finalize your booking.`;
+    const reply = `📋 Here is your complete **Trip Itinerary Summary** to **${session.destination}**! Please review the details below. Tap **Proceed to Payment** to complete your reservation via Booking.com Payments.`;
 
     await this.saveBotMessage(session.id, reply, { type: 'summary', data: summaryData });
 
@@ -446,7 +455,7 @@ export class TravelOrchestrator {
   /**
    * Handle Stage 5: Final confirmation & PDF document delivery
    */
-  private async handleCheckoutStep(session: any, input: string): Promise<ChatResponse> {
+  private async handleCheckoutStep(session: any, input: string, payload?: any): Promise<ChatResponse> {
     const flight: FlightOffer = session.selectedFlightId ? JSON.parse(session.selectedFlightId) : null;
     const hotel: HotelAccommodation = session.selectedHotelId ? JSON.parse(session.selectedHotelId) : null;
     const cab: CabTransfer | undefined = session.selectedCabId ? JSON.parse(session.selectedCabId) : undefined;
@@ -455,6 +464,12 @@ export class TravelOrchestrator {
     const taxesAndFees = Math.round(subtotal * 0.12 * 100) / 100;
     const totalCost = subtotal + taxesAndFees;
     const bookingReference = `TRV-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    const paymentMethod = payload?.paymentMethod || 'Credit / Debit Card';
+    const paymentResult = await bookingComPaymentProvider.verifyPayment(
+      session.orderToken || `bkg_pay_${bookingReference}`,
+      paymentMethod
+    );
 
     const bookingDetails: BookingDetails = {
       bookingReference,
@@ -509,11 +524,13 @@ export class TravelOrchestrator {
       data: { currentStep: 'CONFIRMED' }
     });
 
-    const reply = `🎉 **Congratulations! Your Trip is Confirmed!**\n\nYour official booking reference is **${bookingReference}**. Your e-tickets and hotel vouchers have been compiled and generated below.`;
+    const reply = `🎉 **Congratulations! Your Trip is Confirmed!**\n\nPayment authorized via **Booking.com Payments** (${paymentMethod}). Your official booking reference is **${bookingReference}**. Your e-tickets and printable vouchers are ready below.`;
 
     const ticketCardData = {
       ...bookingDetails,
-      pdfUrl
+      pdfUrl,
+      printUrl: `/print-ticket.html?ref=${bookingReference}`,
+      paymentResult
     };
 
     await this.saveBotMessage(session.id, reply, { type: 'ticket', data: ticketCardData });
@@ -571,7 +588,7 @@ export class TravelOrchestrator {
       const hotel: HotelAccommodation | undefined = session.selectedHotelId ? JSON.parse(session.selectedHotelId) : undefined;
       return this.proceedToCabSelection(session, hotel, payload.routeType || 'airport_to_hotel');
     } else if (action === 'CONFIRM_BOOKING') {
-      return this.handleCheckoutStep(session, 'confirm');
+      return this.handleCheckoutStep(session, 'confirm', payload);
     }
 
     return this.handleInitiationStep(session, input);

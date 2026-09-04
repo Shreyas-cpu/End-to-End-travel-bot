@@ -8,12 +8,14 @@
 - **Email**: traveler@example.com
 
 ## Travel Preferences
-- **Preferred Cabin Class**: Economy
+- **Preferred Cabin Class**: Business
 - **Preferred Hotel Location**: Near Airport
 - **Preferred Departure Time**: morning
-- **Favorite Airlines**: Air France, Delta Air Lines
+- **Favorite Airlines**: Air France, Delta Air Lines, British Airways
 - **Frequent Destinations**: Paris, London
 - **Preferred Amenities**: Free WiFi, Breakfast Included
 
 ## Booking History
-*No previous bookings recorded yet.*
+| Date | Reference | Destination | Flight & Cabin | Hotel | Total USD |
+|---|---|---|---|---|---|
+| 2026-09-04 | `TRV-674638` | London | British Airways (BA 178) (Business) | Premier Inn London Heathrow Airport T4 | $1766.24 |

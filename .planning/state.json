@@ -36,7 +36,7 @@
     {
       "number": "7",
       "name": "Booking.com Payment Integration & Dual-Mode Printable Summary",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "8",
@@ -46,8 +46,8 @@
   ],
   "next": {
     "command": "/gsd-progress --next",
-    "label": "Advance to the next step (plan phase 7)",
-    "reason": "Phase 7 of 8 — needs a plan"
+    "label": "Advance to the next step (plan phase 8)",
+    "reason": "Phase 8 of 8 — needs a plan"
   },
-  "updated_at": "2026-09-04T10:43:35.421Z"
+  "updated_at": "2026-09-04T10:50:39.368Z"
 }

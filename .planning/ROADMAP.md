@@ -12,7 +12,7 @@ This roadmap establishes a comprehensive 8-phase implementation plan transformin
 - [x] **Phase 4: User Profile Engine (`.md` Personalization)** - Implement user profile markdown manager, recording preferences and injecting them into recommendation prompts. (completed 2026-09-04)
 - [x] **Phase 5: RAG Engine & Travel Domain Guardrails** - Build travel knowledge index and enforce guardrail prompts to keep LLM strictly on-topic. (completed 2026-09-04)
 - [x] **Phase 6: Admin Dashboard & Runtime API Key Manager** - Build secure admin portal for Booking.com (Hotels, Flights, Cabs & Payment API), Amadeus, and LLM API keys, mock/live toggles, and booking telemetry. (completed 2026-09-04)
-- [ ] **Phase 7: Booking.com Payment Integration & Dual-Mode Printable Summary** - Implement Booking.com Payment API checkout session flow (with mock fallback), PDFKit voucher enhancement, and direct in-browser printing trigger.
+- [x] **Phase 7: Booking.com Payment Integration & Dual-Mode Printable Summary** - Implement Booking.com Payment API checkout session flow (with mock fallback), PDFKit voucher enhancement, and direct in-browser printing trigger. (completed 2026-09-04)
 - [ ] **Phase 8: End-to-End Integration, UI Polish & Verification** - Conduct end-to-end scenario testing across web and mobile layouts, ensuring seamless transitions.
 
 ## Phase Details

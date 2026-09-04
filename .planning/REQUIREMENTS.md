@@ -36,11 +36,11 @@
 
 ### Checkout, Payment & Printable Summary (SUM)
 
-- [ ] **SUM-01**: Comprehensive Trip Summary aggregating flight, hotel, and transfer costs with 12% itemized taxes & service fees.
-- [ ] **SUM-02**: "Proceed to Payment" action executing Booking.com Payments API checkout flow (with fallback mock payment session when credentials pending).
-- [ ] **SUM-03**: Booking reference generation and persistence to Prisma database.
-- [ ] **SUM-04**: High-resolution vector PDF e-ticket generation via PDFKit.
-- [ ] **SUM-05**: Direct in-browser printing trigger (`window.print` / printable layout view) alongside instant PDF download.
+- [x] **SUM-01**: Comprehensive Trip Summary aggregating flight, hotel, and transfer costs with 12% itemized taxes & service fees.
+- [x] **SUM-02**: "Proceed to Payment" action executing Booking.com Payments API checkout flow (with fallback mock payment session when credentials pending).
+- [x] **SUM-03**: Booking reference generation and persistence to Prisma database.
+- [x] **SUM-04**: High-resolution vector PDF e-ticket generation via PDFKit.
+- [x] **SUM-05**: Direct in-browser printing trigger (`window.print` / printable layout view) alongside instant PDF download.
 
 ### Admin Dashboard & API Management (ADM)
 

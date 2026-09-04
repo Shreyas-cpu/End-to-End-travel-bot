@@ -108,6 +108,35 @@ app.get('/api/chat/history/:sessionId', async (req: Request, res: Response) => {
 });
 
 /**
+ * Retrieve Confirmed Booking by Reference
+ */
+app.get('/api/booking/:ref', async (req: Request, res: Response) => {
+  try {
+    const { ref } = req.params;
+    const booking = await prisma.booking.findUnique({
+      where: { bookingReference: ref }
+    });
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    res.json({
+      success: true,
+      booking: {
+        ...booking,
+        flight: booking.flightDetails ? JSON.parse(booking.flightDetails) : null,
+        hotel: booking.hotelDetails ? JSON.parse(booking.hotelDetails) : null,
+        cab: booking.cabDetails ? JSON.parse(booking.cabDetails) : null
+      }
+    });
+  } catch (error: any) {
+    console.error('Booking fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch booking', details: error.message });
+  }
+});
+
+/**
  * Retrieve User Profile (Parsed JSON and Markdown format)
  */
 app.get('/api/user/profile/:userId?', async (req: Request, res: Response) => {

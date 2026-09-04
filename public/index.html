@@ -171,6 +171,96 @@
     </main>
   </div>
 
+  <!-- Booking.com Payments Checkout Modal -->
+  <div class="modal-overlay" id="paymentModal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-brand">
+          <div class="modal-brand-icon"><i class="fa-solid fa-lock"></i></div>
+          <div>
+            <h3>Booking.com Payments</h3>
+            <span class="modal-sub">Secure Checkout Gateway</span>
+          </div>
+        </div>
+        <button type="button" class="btn-close-modal" id="btnCloseModal" onclick="handleClosePaymentModal()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="payment-order-summary">
+          <div class="order-total-label">Total Amount to Charge:</div>
+          <div class="order-total-amount" id="modalTotalAmount">$0.00 USD</div>
+          <div class="order-meta-info" id="modalOrderMeta">Complete Travel Package (Flights, Hotel, Transfer)</div>
+        </div>
+
+        <div class="payment-methods">
+          <label class="method-option active" data-method="card" onclick="selectPaymentMethod('card')">
+            <input type="radio" name="payment_method" value="card" checked>
+            <div class="method-info">
+              <span class="method-title"><i class="fa-brands fa-cc-visa"></i> Credit / Debit Card</span>
+              <span class="method-desc">Instant confirmation via Booking.com Pay</span>
+            </div>
+            <span class="card-icons"><i class="fa-brands fa-cc-mastercard"></i> <i class="fa-brands fa-cc-amex"></i></span>
+          </label>
+
+          <label class="method-option" data-method="paypal" onclick="selectPaymentMethod('paypal')">
+            <input type="radio" name="payment_method" value="paypal">
+            <div class="method-info">
+              <span class="method-title"><i class="fa-brands fa-paypal"></i> PayPal / Digital Wallet</span>
+              <span class="method-desc">Fast, secure one-click checkout</span>
+            </div>
+          </label>
+
+          <label class="method-option" data-method="netbanking" onclick="selectPaymentMethod('netbanking')">
+            <input type="radio" name="payment_method" value="netbanking">
+            <div class="method-info">
+              <span class="method-title"><i class="fa-solid fa-building-columns"></i> Instant Bank Transfer / UPI</span>
+              <span class="method-desc">Direct bank clearing</span>
+            </div>
+          </label>
+        </div>
+
+        <!-- Simulated Card Details Form -->
+        <div class="card-fields-box" id="cardFieldsBox">
+          <div class="form-group">
+            <label>Cardholder Name</label>
+            <input type="text" id="cardNameInput" value="Alex Mercer" placeholder="Name on card">
+          </div>
+          <div class="form-group">
+            <label>Card Number</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-credit-card"></i>
+              <input type="text" id="cardNumberInput" value="•••• •••• •••• 4242" placeholder="4000 0000 0000 0000">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Expiry Date</label>
+              <input type="text" id="cardExpInput" value="12/28" placeholder="MM/YY">
+            </div>
+            <div class="form-group">
+              <label>Security CVV</label>
+              <input type="password" id="cardCvvInput" value="888" placeholder="CVC">
+            </div>
+          </div>
+        </div>
+
+        <div class="security-guarantee">
+          <i class="fa-solid fa-shield-check"></i>
+          <span>256-bit SSL encrypted & PCI-DSS Level 1 compliant. Your transaction is authorized in real time.</span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" onclick="handleClosePaymentModal()">Cancel</button>
+        <button type="button" class="btn-pay-now" id="btnPayNow" onclick="handleExecutePayment()">
+          <i class="fa-solid fa-lock"></i> Pay & Authorize Booking
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>

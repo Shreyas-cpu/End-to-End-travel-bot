@@ -380,6 +380,10 @@ function renderCards(cards) {
 
   if (cards.type === 'summary' && cards.data) {
     const s = cards.data;
+    window.cachedSummary = s;
+    const gatewayEnv = s.paymentSession ? s.paymentSession.environment.toUpperCase() : 'SANDBOX';
+    const gatewayProvider = s.paymentSession ? s.paymentSession.provider : 'Booking.com Payments API';
+
     return `
       <div class="summary-card">
         <div class="summary-header">
@@ -427,10 +431,16 @@ function renderCards(cards) {
             <span>Total Package:</span>
             <span>$${s.totalCost.toFixed(2)} USD</span>
           </div>
+
+          <!-- Payment Security Badge -->
+          <div class="payment-gateway-badge">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>Secured by <strong>${escapeHtml(gatewayProvider)}</strong> (${gatewayEnv})</span>
+          </div>
         </div>
 
-        <button class="btn-confirm-booking" onclick="handleConfirmBooking()">
-          <i class="fa-solid fa-file-pdf"></i> Confirm & Generate E-Tickets
+        <button class="btn-confirm-booking" onclick="handleOpenPaymentModal()">
+          <i class="fa-solid fa-credit-card"></i> Proceed to Payment & Confirmation
         </button>
       </div>
     `;
@@ -438,26 +448,33 @@ function renderCards(cards) {
 
   if (cards.type === 'ticket' && cards.data) {
     const t = cards.data;
+    try {
+      localStorage.setItem(`booking_${t.bookingReference}`, JSON.stringify(t));
+      localStorage.setItem('last_booking', JSON.stringify(t));
+    } catch (e) {}
+
+    const printTicketUrl = `/print-ticket.html?ref=${encodeURIComponent(t.bookingReference)}`;
+
     return `
       <div class="ticket-card">
         <div class="ticket-header">
           <div>
-            <h3 style="font-size: 16px; font-weight: 700; color: #34D399;"><i class="fa-solid fa-circle-check"></i> E-Ticket Voucher Ready</h3>
-            <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Issued for ${escapeHtml(t.passengerName)}</p>
+            <h3 style="font-size: 16px; font-weight: 700; color: #34D399;"><i class="fa-solid fa-circle-check"></i> E-Ticket & Vouchers Issued</h3>
+            <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Issued for ${escapeHtml(t.passengerName)} • Ref: ${escapeHtml(t.bookingReference)}</p>
           </div>
           <div class="ticket-ref-badge">${escapeHtml(t.bookingReference)}</div>
         </div>
 
-        <p style="font-size: 13px; color: var(--text-secondary);">
-          Your complete flight itinerary, Booking.com voucher, and transfer confirmation have been compiled into an official PDF travel document.
+        <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+          Your reservation is confirmed and paid via <strong>Booking.com Payments</strong>. You can print your travel vouchers directly or download the official PDF e-ticket.
         </p>
 
         <div class="ticket-actions">
           <a href="${t.pdfUrl}" target="_blank" class="btn-download-ticket">
-            <i class="fa-solid fa-download"></i> Download Official PDF
+            <i class="fa-solid fa-file-arrow-down"></i> Download Official PDF
           </a>
-          <a href="${t.pdfUrl}" target="_blank" class="btn-card-select" style="background: rgba(255,255,255,0.08); padding: 12px 18px;">
-            <i class="fa-solid fa-eye"></i> View
+          <a href="${printTicketUrl}" target="_blank" class="btn-print-ticket">
+            <i class="fa-solid fa-print"></i> Print Itinerary
           </a>
         </div>
       </div>
@@ -764,9 +781,76 @@ window.handleSkipCab = function() {
   });
 };
 
+window.selectedPaymentMethod = 'card';
+
+window.handleOpenPaymentModal = function() {
+  const modal = document.getElementById('paymentModal');
+  if (!modal) {
+    window.handleConfirmBooking();
+    return;
+  }
+
+  const s = window.cachedSummary;
+  if (s) {
+    const totalEl = document.getElementById('modalTotalAmount');
+    if (totalEl) totalEl.textContent = `$${s.totalCost.toFixed(2)} ${s.currency || 'USD'}`;
+    const metaEl = document.getElementById('modalOrderMeta');
+    if (metaEl) {
+      metaEl.textContent = `Trip to ${s.destination || 'Destination'} (${s.dates || ''})`;
+    }
+  }
+
+  modal.style.display = 'flex';
+};
+
+window.handleClosePaymentModal = function() {
+  const modal = document.getElementById('paymentModal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.selectPaymentMethod = function(method) {
+  window.selectedPaymentMethod = method;
+  document.querySelectorAll('.method-option').forEach(el => {
+    el.classList.toggle('active', el.getAttribute('data-method') === method);
+  });
+
+  const cardBox = document.getElementById('cardFieldsBox');
+  if (cardBox) {
+    cardBox.style.display = method === 'card' ? 'block' : 'none';
+  }
+};
+
+window.handleExecutePayment = function() {
+  const btn = document.getElementById('btnPayNow');
+  if (btn) {
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing via Booking.com...';
+    btn.disabled = true;
+  }
+
+  setTimeout(() => {
+    window.handleClosePaymentModal();
+    if (btn) {
+      btn.innerHTML = '<i class="fa-solid fa-lock"></i> Pay & Authorize Booking';
+      btn.disabled = false;
+    }
+
+    const methodLabels = {
+      card: 'Credit Card (Visa)',
+      paypal: 'PayPal Wallet',
+      netbanking: 'Instant Bank Transfer / UPI'
+    };
+
+    sendMessage(`Payment authorized via Booking.com Payments (${methodLabels[window.selectedPaymentMethod] || 'Credit Card'}). Confirming booking!`, {
+      action: 'CONFIRM_BOOKING',
+      paymentMethod: methodLabels[window.selectedPaymentMethod] || 'Credit Card (Visa)'
+    });
+  }, 700);
+};
+
 window.handleConfirmBooking = function() {
   sendMessage('Confirm my travel reservation and issue official tickets', {
-    action: 'CONFIRM_BOOKING'
+    action: 'CONFIRM_BOOKING',
+    paymentMethod: 'Credit / Debit Card'
   });
 };
 

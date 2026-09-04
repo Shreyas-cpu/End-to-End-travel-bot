@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Travel Itinerary & E-Ticket Voucher</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1A365D;
+      --accent: #2563EB;
+      --success: #059669;
+      --text-dark: #1E293B;
+      --text-muted: #64748B;
+      --border: #E2E8F0;
+      --bg-subtle: #F8FAFC;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #F1F5F9;
+      color: var(--text-dark);
+      padding: 24px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .no-print-bar {
+      max-width: 800px;
+      margin: 0 auto 20px auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #FFFFFF;
+      padding: 12px 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    .back-btn {
+      color: var(--text-dark);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .back-btn:hover {
+      color: var(--accent);
+    }
+
+    .action-group {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn-action {
+      background: var(--accent);
+      color: #FFFFFF;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-action:hover {
+      background: #1D4ED8;
+    }
+
+    .btn-action.secondary {
+      background: #F1F5F9;
+      color: var(--text-dark);
+      border: 1px solid var(--border);
+    }
+
+    .btn-action.secondary:hover {
+      background: #E2E8F0;
+    }
+
+    /* Printable Ticket Container */
+    .voucher-sheet {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #FFFFFF;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+      overflow: hidden;
+    }
+
+    .voucher-header {
+      background: linear-gradient(135deg, #1A365D 0%, #0F172A 100%);
+      color: #FFFFFF;
+      padding: 28px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-subtitle {
+      font-size: 12px;
+      color: #94A3B8;
+      margin-top: 4px;
+    }
+
+    .ref-box {
+      background: #FFFFFF;
+      color: var(--text-dark);
+      padding: 10px 18px;
+      border-radius: 8px;
+      text-align: right;
+    }
+
+    .ref-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .ref-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-top: 2px;
+    }
+
+    .voucher-body {
+      padding: 28px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Passenger info banner */
+    .passenger-strip {
+      display: grid;
+      grid-template-columns: 2fr 2fr 1.5fr;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 18px;
+    }
+
+    .strip-col-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .strip-col-val {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--success);
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    /* Section Cards */
+    .section-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: #FFFFFF;
+    }
+
+    .section-title-bar {
+      padding: 10px 18px;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .section-flight .section-title-bar {
+      background: #EFF6FF;
+      color: #1E40AF;
+      border-bottom: 1px solid #DBEAFE;
+    }
+
+    .section-hotel .section-title-bar {
+      background: #FEF3C7;
+      color: #92400E;
+      border-bottom: 1px solid #FDE68A;
+    }
+
+    .section-transfer .section-title-bar {
+      background: #F3E8FF;
+      color: #6B21A8;
+      border-bottom: 1px solid #E9D5FF;
+    }
+
+    .section-content {
+      padding: 16px 20px;
+    }
+
+    /* Flight layout */
+    .flight-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .airport-point {
+      text-align: left;
+    }
+
+    .airport-point.right {
+      text-align: right;
+    }
+
+    .code-lg {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-dark);
+    }
+
+    .city-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .time-lg {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-top: 2px;
+    }
+
+    .flight-divider {
+      text-align: center;
+      flex: 1;
+      padding: 0 20px;
+    }
+
+    .flight-divider .line {
+      height: 2px;
+      background: #CBD5E1;
+      position: relative;
+      margin: 8px 0;
+    }
+
+    .flight-divider .line::after {
+      content: '✈';
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #FFFFFF;
+      padding: 0 6px;
+      color: var(--accent);
+      font-size: 14px;
+    }
+
+    .flight-meta-pills {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .meta-pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .pill-cabin {
+      background: #DBEAFE;
+      color: #1E40AF;
+    }
+
+    .pill-fare {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      color: var(--text-dark);
+    }
+
+    /* Hotel layout */
+    .hotel-grid {
+      display: grid;
+      grid-template-columns: 3fr 1.5fr;
+      gap: 16px;
+    }
+
+    .hotel-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 4px;
+    }
+
+    .hotel-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .hotel-specs {
+      font-size: 12px;
+      color: var(--text-dark);
+      line-height: 1.6;
+    }
+
+    .hotel-pricing-box {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border-left: 1px solid var(--border);
+      padding-left: 16px;
+    }
+
+    /* Transfer layout */
+    .transfer-grid {
+      display: grid;
+      grid-template-columns: 3fr 1.5fr;
+      gap: 16px;
+    }
+
+    /* Billing Summary */
+    .billing-section {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 24px;
+    }
+
+    .billing-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 24px;
+    }
+
+    .receipt-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      margin-bottom: 8px;
+      color: var(--text-muted);
+    }
+
+    .receipt-row strong {
+      color: var(--text-dark);
+    }
+
+    .receipt-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 10px 0;
+    }
+
+    .receipt-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .payment-stamp {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border-left: 1px dashed var(--border);
+      padding-left: 20px;
+      text-align: center;
+    }
+
+    .stamp-badge {
+      background: #DCFCE7;
+      color: #166534;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .stamp-details {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Barcode footer */
+    .voucher-footer {
+      padding: 16px 32px 24px 32px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #FFFFFF;
+    }
+
+    .barcode-container {
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 4px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    .notice-text {
+      font-size: 10px;
+      color: var(--text-muted);
+      max-width: 480px;
+      line-height: 1.4;
+      text-align: right;
+    }
+
+    /* Print Specific Media Rules */
+    @media print {
+      body {
+        background: #FFFFFF !important;
+        padding: 0 !important;
+      }
+      .no-print-bar {
+        display: none !important;
+      }
+      .voucher-sheet {
+        box-shadow: none !important;
+        border: none !important;
+        max-width: 100% !important;
+        border-radius: 0 !important;
+      }
+      .voucher-header {
+        background: #1A365D !important;
+        color: #FFFFFF !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .section-flight .section-title-bar,
+      .section-hotel .section-title-bar,
+      .section-transfer .section-title-bar,
+      .pill-cabin,
+      .stamp-badge {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Action Bar (Hidden on Print) -->
+  <div class="no-print-bar">
+    <a href="/" class="back-btn">
+      <i class="fa-solid fa-arrow-left"></i> Return to Assistant
+    </a>
+    <div class="action-group">
+      <a href="#" id="btnDownloadPdf" target="_blank" class="btn-action secondary">
+        <i class="fa-solid fa-file-pdf"></i> Download PDF
+      </a>
+      <button type="button" onclick="window.print()" class="btn-action">
+        <i class="fa-solid fa-print"></i> Print Voucher
+      </button>
+    </div>
+  </div>
+
+  <!-- Ticket Sheet -->
+  <div class="voucher-sheet" id="voucherSheet">
+    <!-- Header -->
+    <div class="voucher-header">
+      <div>
+        <div class="brand-title">
+          <i class="fa-solid fa-plane-departure"></i> TRAVEL CONFIRMATION & E-TICKET
+        </div>
+        <div class="brand-subtitle">
+          AI Travel Assistant Booking Framework • Official Voucher
+        </div>
+      </div>
+      <div class="ref-box">
+        <div class="ref-label">Booking Reference</div>
+        <div class="ref-code" id="lblBookingRef">TRV-000000</div>
+      </div>
+    </div>
+
+    <div class="voucher-body">
+      <!-- Passenger Row -->
+      <div class="passenger-strip">
+        <div>
+          <div class="strip-col-label">Passenger Name</div>
+          <div class="strip-col-val" id="lblPassengerName">Alex Mercer</div>
+        </div>
+        <div>
+          <div class="strip-col-label">Passenger Email</div>
+          <div class="strip-col-val" id="lblPassengerEmail">alex.mercer@traveler.com</div>
+        </div>
+        <div>
+          <div class="strip-col-label">Booking Status</div>
+          <div class="status-badge">
+            <i class="fa-solid fa-circle-check"></i> CONFIRMED & READY
+          </div>
+        </div>
+      </div>
+
+      <!-- Flight Reservation -->
+      <div class="section-card section-flight" id="secFlight">
+        <div class="section-title-bar">
+          <span><i class="fa-solid fa-plane"></i> Flight Reservation</span>
+          <span id="lblFlightAirlines">Delta Air Lines (DL-104)</span>
+        </div>
+        <div class="section-content">
+          <div class="flight-row">
+            <div class="airport-point">
+              <div class="code-lg" id="lblFlightOriginCode">JFK</div>
+              <div class="city-sub" id="lblFlightOriginCity">New York (JFK)</div>
+              <div class="time-lg" id="lblFlightDepTime">08:30 AM</div>
+              <div class="city-sub" id="lblFlightDepDate">2026-10-12</div>
+            </div>
+            <div class="flight-divider">
+              <div class="city-sub" id="lblFlightDuration">7h 45m • Non-stop</div>
+              <div class="line"></div>
+              <div class="city-sub">Scheduled On-Time</div>
+            </div>
+            <div class="airport-point right">
+              <div class="code-lg" id="lblFlightDestCode">CDG</div>
+              <div class="city-sub" id="lblFlightDestCity">Paris Charles de Gaulle</div>
+              <div class="time-lg" id="lblFlightArrTime">10:15 PM</div>
+              <div class="city-sub" id="lblFlightArrDate">2026-10-12</div>
+            </div>
+          </div>
+          <div class="flight-meta-pills">
+            <span class="meta-pill pill-cabin" id="lblFlightCabin">CABIN: BUSINESS</span>
+            <span class="meta-pill pill-fare" id="lblFlightBaggage">1 Carry-on + 2 Checked Bags Included</span>
+            <span class="meta-pill pill-fare" id="lblFlightFare">Fare: $780.00 USD</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hotel Accommodation -->
+      <div class="section-card section-hotel" id="secHotel">
+        <div class="section-title-bar">
+          <span><i class="fa-solid fa-hotel"></i> Hotel Accommodation (Booking.com Partner)</span>
+          <span id="lblHotelStars">★★★★☆ (8.8/10)</span>
+        </div>
+        <div class="section-content">
+          <div class="hotel-grid">
+            <div>
+              <div class="hotel-name" id="lblHotelName">CitizenM Paris Charles de Gaulle Airport</div>
+              <div class="hotel-sub" id="lblHotelAddress">7 Rue de Rome, Roissypole, 95700 Roissy-en-France</div>
+              <div class="hotel-specs">
+                <strong>Room Type:</strong> <span id="lblHotelRoom">King Room with Airport View</span><br>
+                <strong>Bedding:</strong> <span id="lblHotelBed">1 Extra-Large Double Bed</span> • <span id="lblHotelBreakfast">Breakfast Included</span><br>
+                <strong style="color: var(--success);">Policy:</strong> <span id="lblHotelCancel">Free cancellation up to 48 hours prior to check-in</span>
+              </div>
+            </div>
+            <div class="hotel-pricing-box">
+              <div class="strip-col-label">Duration of Stay</div>
+              <div class="strip-col-val" id="lblHotelDuration">4 Nights</div>
+              <div class="time-lg" id="lblHotelPrice">$640.00 USD</div>
+              <div style="font-size: 11px; color: var(--success); font-weight: 700; margin-top: 4px;">
+                ✔ Booking.com Guaranteed
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ground Transfer -->
+      <div class="section-card section-transfer" id="secTransfer">
+        <div class="section-title-bar">
+          <span><i class="fa-solid fa-car-side"></i> Ground Transfer & Chauffeur</span>
+          <span id="lblTransferRating">Driver: ★ 4.9</span>
+        </div>
+        <div class="section-content">
+          <div class="transfer-grid">
+            <div>
+              <div class="hotel-name" id="lblTransferVehicle">Executive Business Sedan</div>
+              <div class="hotel-sub" id="lblTransferModel">Mercedes-Benz E-Class • Max 3 Passengers / 3 Luggage</div>
+              <div class="hotel-specs">
+                <strong>Pickup:</strong> <span id="lblTransferPickup">Terminal 2E Arrival Hall</span><br>
+                <strong>Drop-off:</strong> <span id="lblTransferDropoff">Hotel Lobby</span>
+              </div>
+            </div>
+            <div class="hotel-pricing-box">
+              <div class="strip-col-label">Transfer Rate</div>
+              <div class="time-lg" id="lblTransferPrice">$95.00 USD</div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Fixed All-Inclusive</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Billing & Payment Section -->
+      <div class="billing-section">
+        <div class="billing-grid">
+          <div>
+            <div class="strip-col-label" style="margin-bottom: 8px;">Itemized Invoice</div>
+            <div class="receipt-row">
+              <span id="lblBillFlightName">Flight Reservation:</span>
+              <strong id="lblBillFlightCost">$780.00</strong>
+            </div>
+            <div class="receipt-row">
+              <span id="lblBillHotelName">Hotel Accommodation:</span>
+              <strong id="lblBillHotelCost">$640.00</strong>
+            </div>
+            <div class="receipt-row" id="rowBillTransfer">
+              <span>Ground Transfer:</span>
+              <strong id="lblBillTransferCost">$95.00</strong>
+            </div>
+            <div class="receipt-row">
+              <span>Taxes & Mandatory Fees (12%):</span>
+              <strong id="lblBillTaxes">$181.80</strong>
+            </div>
+            <div class="receipt-divider"></div>
+            <div class="receipt-total">
+              <span>Total Paid:</span>
+              <span id="lblBillTotal">$1,696.80 USD</span>
+            </div>
+          </div>
+
+          <div class="payment-stamp">
+            <div class="stamp-badge">
+              <i class="fa-solid fa-lock"></i> Secured by Booking.com Payments
+            </div>
+            <div class="stamp-details">
+              <strong>Order Token:</strong> <span id="lblOrderToken" style="font-family: monospace;">ord_bkg_889123</span><br>
+              <strong>Status:</strong> Captured & Settled<br>
+              <strong>PCI-DSS Compliance:</strong> Level 1 Certified<br>
+              <span id="lblTimestamp">Generated: Oct 12, 2026</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Voucher Footer -->
+    <div class="voucher-footer">
+      <div class="barcode-container">
+        ||| | |||| | || |||| ||| |||| |
+        <div style="font-size: 9px; font-weight: normal; letter-spacing: 1px; color: var(--text-muted); margin-top: 2px;" id="lblBarcodeRef">
+          * TRV-000000 *
+        </div>
+      </div>
+      <div class="notice-text">
+        Present this voucher electronically or printed upon flight check-in and hotel reception. A valid government photo ID is required for all ticket holders.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function initPrintPage() {
+      const params = new URLSearchParams(window.location.search);
+      const bookingRef = params.get('ref') || 'TRV-DEMO';
+      document.getElementById('lblBookingRef').textContent = bookingRef;
+      document.getElementById('lblBarcodeRef').textContent = `* ${bookingRef} *`;
+
+      try {
+        const res = await fetch(`/api/booking/${encodeURIComponent(bookingRef)}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.booking) {
+            renderBooking(json.booking);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Could not fetch from server, checking localStorage fallback:', e);
+      }
+
+      // Check localStorage cached booking
+      const localCached = localStorage.getItem(`booking_${bookingRef}`) || localStorage.getItem('last_booking');
+      if (localCached) {
+        try {
+          const parsed = JSON.parse(localCached);
+          renderBooking(parsed);
+        } catch(err){}
+      }
+    }
+
+    function renderBooking(b) {
+      if (b.bookingReference) {
+        document.getElementById('lblBookingRef').textContent = b.bookingReference;
+        document.getElementById('lblBarcodeRef').textContent = `* ${b.bookingReference} *`;
+      }
+      if (b.passengerName) document.getElementById('lblPassengerName').textContent = b.passengerName;
+      if (b.passengerEmail) document.getElementById('lblPassengerEmail').textContent = b.passengerEmail;
+      if (b.pdfPath) {
+        const btn = document.getElementById('btnDownloadPdf');
+        btn.href = b.pdfPath;
+      }
+
+      // Flight
+      if (b.flight) {
+        document.getElementById('secFlight').style.display = 'block';
+        document.getElementById('lblFlightAirlines').textContent = `${b.flight.airline} (${b.flight.flightNumber})`;
+        document.getElementById('lblFlightOriginCode').textContent = b.flight.originAirport || 'JFK';
+        document.getElementById('lblFlightOriginCity').textContent = b.flight.origin || 'Origin';
+        document.getElementById('lblFlightDestCode').textContent = b.flight.destinationAirport || 'CDG';
+        document.getElementById('lblFlightDestCity').textContent = b.flight.destination || 'Destination';
+        document.getElementById('lblFlightDepTime').textContent = b.flight.departureTime;
+        document.getElementById('lblFlightDepDate').textContent = b.flight.departureDate;
+        document.getElementById('lblFlightArrTime').textContent = b.flight.arrivalTime;
+        document.getElementById('lblFlightArrDate').textContent = b.flight.arrivalDate;
+        document.getElementById('lblFlightDuration').textContent = `${b.flight.duration} • Non-stop`;
+        document.getElementById('lblFlightCabin').textContent = `CABIN: ${(b.flight.cabinClass || 'Economy').toUpperCase()}`;
+        document.getElementById('lblFlightFare').textContent = `Fare: $${b.flight.price.toFixed(2)} USD`;
+        document.getElementById('lblBillFlightCost').textContent = `$${b.flight.price.toFixed(2)}`;
+      } else {
+        document.getElementById('secFlight').style.display = 'none';
+      }
+
+      // Hotel
+      if (b.hotel) {
+        document.getElementById('secHotel').style.display = 'block';
+        document.getElementById('lblHotelName').textContent = b.hotel.name;
+        document.getElementById('lblHotelStars').textContent = `★ ${b.hotel.starRating} Stars (${b.hotel.reviewScore}/10)`;
+        document.getElementById('lblHotelAddress').textContent = `${b.hotel.address} • Area: ${b.hotel.area || 'City'}`;
+        document.getElementById('lblHotelRoom').textContent = b.hotel.roomType;
+        document.getElementById('lblHotelBed').textContent = b.hotel.bedConfig;
+        document.getElementById('lblHotelBreakfast').textContent = b.hotel.breakfastIncluded ? 'Breakfast Included' : 'Room Only';
+        document.getElementById('lblHotelCancel').textContent = b.hotel.cancellationPolicy || 'Free cancellation';
+        document.getElementById('lblHotelDuration').textContent = `${b.hotel.totalNights} Nights`;
+        document.getElementById('lblHotelPrice').textContent = `$${b.hotel.totalPrice.toFixed(2)} USD`;
+        document.getElementById('lblBillHotelCost').textContent = `$${b.hotel.totalPrice.toFixed(2)}`;
+      } else {
+        document.getElementById('secHotel').style.display = 'none';
+      }
+
+      // Transfer
+      if (b.cab) {
+        document.getElementById('secTransfer').style.display = 'block';
+        document.getElementById('rowBillTransfer').style.display = 'flex';
+        document.getElementById('lblTransferVehicle').textContent = b.cab.vehicleType;
+        document.getElementById('lblTransferModel').textContent = `${b.cab.vehicleModel} • Max ${b.cab.capacity} Passengers / ${b.cab.luggageCount} Bags`;
+        document.getElementById('lblTransferPickup').textContent = b.cab.pickupLocation;
+        document.getElementById('lblTransferDropoff').textContent = b.cab.dropoffLocation;
+        document.getElementById('lblTransferRating').textContent = `Driver: ★ ${b.cab.driverRating}`;
+        document.getElementById('lblTransferPrice').textContent = `$${b.cab.price.toFixed(2)} USD`;
+        document.getElementById('lblBillTransferCost').textContent = `$${b.cab.price.toFixed(2)}`;
+      } else {
+        document.getElementById('secTransfer').style.display = 'none';
+        document.getElementById('rowBillTransfer').style.display = 'none';
+      }
+
+      // Billing
+      const flightPrice = b.flight ? b.flight.price : 0;
+      const hotelPrice = b.hotel ? b.hotel.totalPrice : 0;
+      const cabPrice = b.cab ? b.cab.price : 0;
+      const subtotal = b.subtotal || (flightPrice + hotelPrice + cabPrice);
+      const taxes = b.taxesAndFees || Math.round(subtotal * 0.12 * 100) / 100;
+      const total = b.totalCost || (subtotal + taxes);
+
+      document.getElementById('lblBillTaxes').textContent = `$${taxes.toFixed(2)}`;
+      document.getElementById('lblBillTotal').textContent = `$${total.toFixed(2)} ${b.currency || 'USD'}`;
+      document.getElementById('lblOrderToken').textContent = b.orderToken || 'ord_bkg_' + (b.bookingReference || '9812');
+      document.getElementById('lblTimestamp').textContent = `Issued: ${b.createdAt || new Date().toLocaleDateString()}`;
+    }
+
+    window.addEventListener('DOMContentLoaded', initPrintPage);
+  </script>
+</body>
+</html>
