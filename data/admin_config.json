@@ -11,7 +11,7 @@
   "llmProvider": "rule_engine",
   "geminiApiKey": "",
   "geminiModel": "gemini-2.5-flash",
-  "cabProvider": "standard",
-  "updatedAt": "2026-09-08T10:17:29.260Z",
+  "cabProvider": "mock",
+  "updatedAt": "2026-09-08T10:41:49.291Z",
   "paymentGatewayMode": "sandbox"
 }

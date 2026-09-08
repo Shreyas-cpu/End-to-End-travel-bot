@@ -1,11 +1,11 @@
 {
-  "name": "SkyVoyage AI",
+  "name": "SkyVoyage Concierge",
   "short_name": "SkyVoyage",
-  "description": "AI-first Travel Booking Assistant for Flights, Hotels & Transfers",
+  "description": "Booking.com Travel Concierge for Flights, Stays & Transfers",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0B0F19",
-  "theme_color": "#0B0F19",
+  "background_color": "#003580",
+  "theme_color": "#003580",
   "orientation": "portrait-primary",
   "icons": [
     {

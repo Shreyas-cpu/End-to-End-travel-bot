@@ -153,7 +153,8 @@ export class TravelOrchestrator {
     const endDate = aiExtracted.endDate || ruleExtracted.endDate || session.endDate || '2026-10-16';
     const guests = aiExtracted.guests || ruleExtracted.guests || session.guests || 2;
 
-    if (!amadeusFlightProvider.hasApiKey()) {
+    const isMockFlights = (process.env.FLIGHT_PROVIDER || 'amadeus') === 'mock';
+    if (!isMockFlights && !amadeusFlightProvider.hasApiKey()) {
       await prisma.session.update({
         where: { id: session.id },
         data: {
@@ -166,13 +167,13 @@ export class TravelOrchestrator {
         }
       });
 
-      const reply = `⚠️ **Amadeus Flight API Key Missing**\n\nThe mock framework has been removed. To search real flight schedules, you must configure your **AMADEUS_API_KEY** and **AMADEUS_API_SECRET** in the **[Admin Dashboard](/admin.html)**.\n\nOnce configured, simply message me your travel request again!`;
+      const reply = `⚠️ **Amadeus Flight API Key Missing**\n\nLive Amadeus API mode is currently selected, but no API key was found.\n\n👉 Either configure your **AMADEUS_API_KEY** and **AMADEUS_API_SECRET**, or toggle **Flight Search Mode** to **Mock Data (Testing)** in the **[Admin Dashboard](/admin.html)**!`;
       const errCard = {
         type: 'error' as const,
         data: {
           title: 'Amadeus Flight API Key Missing',
-          provider: 'Amadeus Flight Offers v2',
-          message: 'No API Key inserted. The mock framework has been disabled. Live Amadeus credentials are required to search real flights.',
+          provider: 'Amadeus Flight Offers v2 (Live Mode)',
+          message: 'Live API mode is selected, but no API Key is inserted. Switch to "Mock Data (Testing)" or insert credentials.',
           missingKey: 'AMADEUS_API_KEY & AMADEUS_API_SECRET',
           actionLabel: 'Configure in Admin Dashboard',
           actionUrl: '/admin.html'
@@ -302,15 +303,16 @@ export class TravelOrchestrator {
       }
     });
 
-    // Query Booking.com Demand API provider
-    if (!bookingComProvider.hasApiKey()) {
-      const reply = `✅ **Flight Selected**: ${flight.airline} (${flight.flightNumber}) — **${flight.cabinClass || 'Economy'}** ($${flight.price} USD).\n\n⚠️ **Booking.com Demand API Key Missing**\n\nThe mock framework has been removed. To retrieve live hotel accommodations in **${session.destination || 'Paris'}**, you must configure your **BOOKING_COM_API_KEY** in the **[Admin Dashboard](/admin.html)**.`;
+    // Query Booking.com Demand API provider (or mock adapter)
+    const isMockHotels = (process.env.HOTEL_PROVIDER || 'booking_com') === 'mock';
+    if (!isMockHotels && !bookingComProvider.hasApiKey()) {
+      const reply = `✅ **Flight Selected**: ${flight.airline} (${flight.flightNumber}) — **${flight.cabinClass || 'Economy'}** ($${flight.price} USD).\n\n⚠️ **Booking.com Demand API Key Missing**\n\nLive Booking.com Demand API mode is currently selected, but no API key was found.\n\n👉 Either configure your **BOOKING_COM_API_KEY**, or toggle **Accommodation Search Mode** to **Mock Data (Testing)** in the **[Admin Dashboard](/admin.html)**.`;
       const errCard = {
         type: 'error' as const,
         data: {
           title: 'Booking.com API Key Missing',
-          provider: 'Booking.com Demand API v3',
-          message: 'No API Key inserted. The mock framework has been disabled. Live Booking.com Demand API credentials are required to search accommodations.',
+          provider: 'Booking.com Demand API v3 (Live Mode)',
+          message: 'Live API mode is selected, but no API Key is inserted. Switch to "Mock Data (Testing)" or insert credentials.',
           missingKey: 'BOOKING_COM_API_KEY',
           actionLabel: 'Configure in Admin Dashboard',
           actionUrl: '/admin.html'
@@ -520,7 +522,8 @@ export class TravelOrchestrator {
 
     let paymentSession: any = null;
     let paymentError: string | null = null;
-    if (bookingComPaymentProvider.hasApiKey()) {
+    const isMockPayments = (process.env.PAYMENTS_PROVIDER || 'booking_com_payments') === 'mock';
+    if (isMockPayments || bookingComPaymentProvider.hasApiKey()) {
       try {
         paymentSession = await bookingComPaymentProvider.createPaymentSession({
           bookingReference: `TRV-${Math.floor(100000 + Math.random() * 900000)}`,
@@ -532,7 +535,7 @@ export class TravelOrchestrator {
         paymentError = err.message;
       }
     } else {
-      paymentError = 'No Booking.com Payments API Key inserted. Please configure in the Admin Dashboard.';
+      paymentError = 'Live Booking.com Payments mode selected without API key. Configure key or switch to Mock Mode in Admin.';
     }
 
     const summaryData = {
@@ -548,7 +551,7 @@ export class TravelOrchestrator {
       currency: 'USD',
       paymentSession,
       paymentError,
-      hasPaymentsKey: bookingComPaymentProvider.hasApiKey()
+      hasPaymentsKey: isMockPayments || bookingComPaymentProvider.hasApiKey()
     };
 
     const reply = `📋 Here is your complete **Trip Itinerary Summary** to **${session.destination}**! Please review the details below. Tap **Proceed to Payment** to complete your reservation via Booking.com Payments.`;
@@ -579,14 +582,15 @@ export class TravelOrchestrator {
     const totalCost = subtotal + taxesAndFees;
     const bookingReference = `TRV-${Math.floor(100000 + Math.random() * 900000)}`;
 
-    if (!bookingComPaymentProvider.hasApiKey()) {
-      const reply = `⚠️ **Booking.com Payments API Key Missing**\n\nThe mock framework has been removed. Cannot authorize checkout without a configured **BOOKING_COM_PAYMENTS_API_KEY**.\n\n👉 Please configure your Booking.com Payments key in the **[Admin Dashboard](/admin.html)** to complete payment.`;
+    const isMockPayments = (process.env.PAYMENTS_PROVIDER || 'booking_com_payments') === 'mock';
+    if (!isMockPayments && !bookingComPaymentProvider.hasApiKey()) {
+      const reply = `⚠️ **Booking.com Payments API Key Missing**\n\nLive Booking.com Payments mode is currently selected, but no API Key is inserted.\n\n👉 Please configure your **BOOKING_COM_PAYMENTS_API_KEY** or toggle **Payment Provider Mode** to **Mock Data (Testing)** in the **[Admin Dashboard](/admin.html)**.`;
       const errCard = {
         type: 'error' as const,
         data: {
           title: 'Booking.com Payments API Key Missing',
-          provider: 'Booking.com Payments API',
-          message: 'No API Key inserted. The mock framework has been disabled. A valid Payments API key is required to authorize transactions.',
+          provider: 'Booking.com Payments API (Live Mode)',
+          message: 'Live Payments mode requires a valid API key. Switch to "Mock Data (Testing)" or configure credentials in Admin.',
           missingKey: 'BOOKING_COM_PAYMENTS_API_KEY',
           actionLabel: 'Configure in Admin Dashboard',
           actionUrl: '/admin.html'

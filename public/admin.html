@@ -1,21 +1,34 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard | SkyVoyage AI</title>
+  <title>Admin Dashboard | SkyVoyage Concierge</title>
+  <script>
+    (function() {
+      const theme = localStorage.getItem('skyvoyage_theme') || 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
   <style>
+    html, body {
+      height: auto !important;
+      min-height: 100vh !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+    }
     body {
-      background: var(--bg-dark);
+      background: var(--bg-main);
       color: var(--text-primary);
       font-family: var(--font-body);
       margin: 0;
       padding: 0;
+      transition: background-color 0.25s ease, color 0.25s ease;
     }
     .admin-container {
       max-width: 960px;
@@ -29,38 +42,48 @@
       margin-bottom: 30px;
       padding-bottom: 20px;
       border-bottom: 1px solid var(--border-color);
+      gap: 16px;
+      flex-wrap: wrap;
     }
     .admin-title-box h1 {
       font-family: var(--font-heading);
-      font-size: 26px;
+      font-size: 24px;
       font-weight: 800;
       margin: 0 0 6px 0;
       display: flex;
       align-items: center;
       gap: 10px;
+      color: var(--text-primary);
     }
     .admin-title-box p {
       margin: 0;
       color: var(--text-muted);
       font-size: 13px;
     }
+    .admin-nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
     .btn-back-chat {
-      background: rgba(255, 255, 255, 0.05);
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
       color: var(--text-primary);
-      padding: 9px 16px;
+      padding: 8px 16px;
       border-radius: var(--radius-sm);
       text-decoration: none;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       display: flex;
       align-items: center;
       gap: 8px;
       transition: all 0.2s;
+      box-shadow: var(--shadow-subtle);
     }
     .btn-back-chat:hover {
-      background: var(--primary);
+      background: var(--bg-card-hover);
       border-color: var(--primary);
+      color: var(--primary);
     }
     .admin-grid {
       display: grid;
@@ -72,46 +95,67 @@
       border: 1px solid var(--border-color);
       border-radius: var(--radius-md);
       padding: 24px;
-      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow-card);
       display: flex;
       flex-direction: column;
       gap: 16px;
+      transition: all 0.2s ease;
     }
     .admin-card-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      border-bottom: 1px solid var(--border-subtle);
       padding-bottom: 12px;
     }
     .admin-card-header h3 {
       margin: 0;
       font-size: 16px;
-      font-weight: 700;
+      font-weight: 800;
       display: flex;
       align-items: center;
       gap: 10px;
+      color: var(--text-primary);
     }
     .status-badge {
       font-size: 11px;
       font-weight: 700;
       padding: 4px 10px;
       border-radius: var(--radius-full);
-      background: rgba(255, 255, 255, 0.06);
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-color);
       color: var(--text-muted);
       display: flex;
       align-items: center;
       gap: 6px;
     }
     .status-badge.live {
-      background: rgba(16, 185, 129, 0.15);
-      color: #34D399;
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      background: rgba(0, 128, 9, 0.1);
+      color: #008009;
+      border: 1px solid rgba(0, 128, 9, 0.3);
+    }
+    [data-theme="dark"] .status-badge.live {
+      background: rgba(36, 168, 91, 0.15);
+      color: #24a85b;
+      border-color: rgba(36, 168, 91, 0.35);
     }
     .status-badge.mock {
-      background: rgba(245, 158, 11, 0.15);
-      color: #FCD34D;
-      border: 1px solid rgba(245, 158, 11, 0.3);
+      background: rgba(254, 187, 2, 0.15);
+      color: #d97706;
+      border: 1px solid rgba(254, 187, 2, 0.35);
+    }
+    [data-theme="dark"] .status-badge.mock {
+      color: #febb02;
+    }
+    .status-badge.error {
+      background: rgba(220, 38, 38, 0.1);
+      color: #dc2626;
+      border: 1px solid rgba(220, 38, 38, 0.3);
+    }
+    [data-theme="dark"] .status-badge.error {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border-color: rgba(239, 68, 68, 0.35);
     }
     .form-group-row {
       display: grid;
@@ -125,7 +169,7 @@
     }
     .form-group label {
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--text-secondary);
     }
     .input-wrapper {
@@ -135,7 +179,7 @@
     }
     .form-input {
       width: 100%;
-      background: rgba(15, 23, 42, 0.7);
+      background: var(--bg-card-subtle);
       border: 1px solid var(--border-color);
       border-radius: var(--radius-sm);
       color: var(--text-primary);
@@ -148,7 +192,8 @@
     }
     .form-input:focus {
       border-color: var(--primary);
-      box-shadow: 0 0 10px var(--primary-glow);
+      box-shadow: 0 0 0 3px rgba(0, 108, 228, 0.15);
+      background: var(--bg-card);
     }
     .input-btn-toggle {
       position: absolute;
@@ -172,13 +217,13 @@
       margin-right: 12px;
     }
     .btn-test-provider {
-      background: rgba(255, 255, 255, 0.05);
+      background: var(--bg-card-subtle);
       border: 1px solid var(--border-color);
       color: var(--text-secondary);
       padding: 7px 14px;
       border-radius: var(--radius-sm);
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -186,56 +231,65 @@
       transition: all 0.2s;
     }
     .btn-test-provider:hover {
-      background: rgba(59, 130, 246, 0.15);
+      background: var(--bg-card-hover);
       border-color: var(--primary);
-      color: var(--text-primary);
+      color: var(--primary);
     }
     .save-actions-bar {
       position: sticky;
       bottom: 20px;
-      background: rgba(15, 23, 42, 0.95);
-      border: 1px solid var(--border-highlight);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
       border-radius: var(--radius-md);
       padding: 16px 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      backdrop-filter: blur(16px);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      box-shadow: var(--shadow-elevated);
       margin-top: 30px;
     }
     .btn-save-all {
-      background: var(--primary);
+      background: #003580;
       border: none;
-      color: white;
+      color: #ffffff;
       padding: 11px 26px;
       border-radius: var(--radius-sm);
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 800;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 8px;
-      box-shadow: 0 0 15px var(--primary-glow);
+      box-shadow: 0 2px 8px rgba(0, 53, 128, 0.25);
       transition: all 0.2s;
     }
+    [data-theme="dark"] .btn-save-all {
+      background: #3daeff;
+      color: #001e33;
+      box-shadow: 0 2px 10px rgba(61, 174, 255, 0.3);
+    }
     .btn-save-all:hover {
-      background: var(--primary-dark);
+      filter: brightness(1.1);
       transform: translateY(-1px);
     }
     .alert-banner {
       padding: 12px 16px;
       border-radius: var(--radius-sm);
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       display: none;
       margin-bottom: 20px;
     }
     .alert-banner.success {
-      background: rgba(16, 185, 129, 0.15);
-      color: #34D399;
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      background: rgba(0, 128, 9, 0.12);
+      color: #008009;
+      border: 1px solid rgba(0, 128, 9, 0.3);
       display: block;
+    }
+    [data-theme="dark"] .alert-banner.success {
+      background: rgba(36, 168, 91, 0.15);
+      color: #24a85b;
+      border-color: rgba(36, 168, 91, 0.3);
     }
   </style>
 </head>
@@ -246,7 +300,18 @@
         <h1><i class="fa-solid fa-sliders" style="color: var(--primary);"></i> Admin Dashboard & Runtime API Manager</h1>
         <p>Configure live API credentials, select AI engine models, and test service connectivity.</p>
       </div>
-      <a href="/" class="btn-back-chat"><i class="fa-solid fa-arrow-left"></i> Back to Assistant</a>
+      <div class="admin-nav-actions">
+        <!-- Theme Switcher Pill -->
+        <div class="theme-switcher-pill" id="themeSwitcher" title="Switch Theme">
+          <button type="button" class="theme-btn active" id="btnThemeLight" data-theme="light" title="Navy Blue & White (Light Theme)">
+            <i class="fa-solid fa-sun"></i> <span>Navy Light</span>
+          </button>
+          <button type="button" class="theme-btn" id="btnThemeDark" data-theme="dark" title="Light Blue & Black (Dark Theme)">
+            <i class="fa-solid fa-moon"></i> <span>Midnight Dark</span>
+          </button>
+        </div>
+        <a href="/" class="btn-back-chat"><i class="fa-solid fa-arrow-left"></i> Back to Concierge</a>
+      </div>
     </div>
 
     <div id="alertBanner" class="alert-banner"></div>
@@ -275,28 +340,28 @@
           <label>Google Gemini API Key</label>
           <div class="input-wrapper">
             <input type="password" class="form-input" id="geminiApiKey" placeholder="Enter GEMINI_API_KEY...">
-            <button type="button" class="input-btn-toggle" onclick="togglePasswordVisibility(geminiApiKey)"><i class="fa-solid fa-eye"></i></button>
+            <button type="button" class="input-btn-toggle" onclick="togglePasswordVisibility('geminiApiKey')"><i class="fa-solid fa-eye"></i></button>
           </div>
         </div>
         <div class="admin-card-footer">
           <div class="test-result-box" id="result-gemini">Ready to test connection.</div>
-          <button type="button" class="btn-test-provider" onclick="testProviderConnection(gemini)">
+          <button type="button" class="btn-test-provider" onclick="testProviderConnection('gemini')">
             <i class="fa-solid fa-bolt"></i> Test Gemini
           </button>
         </div>
       </div>
 
-      <!-- 2. Flight Provider (Amadeus) -->
+      <!-- 2. Flight Provider (Amadeus / Mock) -->
       <div class="admin-card">
         <div class="admin-card-header">
-          <h3><i class="fa-solid fa-plane" style="color: var(--primary);"></i> Flight Engine (Amadeus v2)</h3>
+          <h3><i class="fa-solid fa-plane" style="color: var(--primary);"></i> Flight Engine Mode</h3>
           <span class="status-badge" id="badge-amadeus">Checking...</span>
         </div>
         <div class="form-group">
           <label>Flight Search Mode</label>
           <select class="form-input" id="flightProvider">
-            <option value="mock">Mock High-Fidelity Adapter (4 Cabin Classes & Timing)</option>
-            <option value="amadeus">Live Amadeus API (/v2/shopping/flight-offers)</option>
+            <option value="mock">Mock Data (Testing) — High-fidelity 4 cabin classes & timings</option>
+            <option value="amadeus">Live Amadeus API (/v2/shopping/flight-offers — Requires API Key)</option>
           </select>
         </div>
         <div class="form-group-row">
@@ -304,36 +369,36 @@
             <label>Amadeus API Key</label>
             <div class="input-wrapper">
               <input type="password" class="form-input" id="amadeusApiKey" placeholder="Amadeus API Key...">
-              <button type="button" class="input-btn-toggle" onclick="togglePasswordVisibility(amadeusApiKey)"><i class="fa-solid fa-eye"></i></button>
+              <button type="button" class="input-btn-toggle" onclick="togglePasswordVisibility('amadeusApiKey')"><i class="fa-solid fa-eye"></i></button>
             </div>
           </div>
           <div class="form-group">
             <label>Amadeus API Secret</label>
             <div class="input-wrapper">
               <input type="password" class="form-input" id="amadeusApiSecret" placeholder="Amadeus API Secret...">
-              <button type="button" class="input-btn-toggle" onclick="togglePasswordVisibility(amadeusApiSecret)"><i class="fa-solid fa-eye"></i></button>
+              <button type="button" class="input-btn-toggle" onclick="togglePasswordVisibility('amadeusApiSecret')"><i class="fa-solid fa-eye"></i></button>
             </div>
           </div>
         </div>
         <div class="admin-card-footer">
           <div class="test-result-box" id="result-amadeus">Ready to test connection.</div>
-          <button type="button" class="btn-test-provider" onclick="testProviderConnection(amadeus)">
-            <i class="fa-solid fa-bolt"></i> Test Amadeus
+          <button type="button" class="btn-test-provider" onclick="testProviderConnection('amadeus')">
+            <i class="fa-solid fa-bolt"></i> Test Flight Engine
           </button>
         </div>
       </div>
 
-      <!-- 3. Hotel Provider (Booking.com Demand API) -->
+      <!-- 3. Hotel Provider (Booking.com / Mock) -->
       <div class="admin-card">
         <div class="admin-card-header">
-          <h3><i class="fa-solid fa-hotel" style="color: #3B82F6;"></i> Hotel Engine (Booking.com Demand API v3)</h3>
+          <h3><i class="fa-solid fa-hotel" style="color: #3B82F6;"></i> Hotel Engine Mode</h3>
           <span class="status-badge" id="badge-booking_com">Checking...</span>
         </div>
         <div class="form-group">
           <label>Accommodation Search Mode</label>
           <select class="form-input" id="hotelProvider">
-            <option value="mock">Mock Booking.com Demand v3 (Carousels & Airport Default)</option>
-            <option value="booking_com">Live Booking.com Demand API v3</option>
+            <option value="mock">Mock Data (Testing) — Photo carousels, ratings, near-airport default</option>
+            <option value="booking_com">Live Booking.com Demand API v3 (Requires API Key)</option>
           </select>
         </div>
         <div class="form-group-row">
@@ -341,7 +406,7 @@
             <label>Booking.com API Key / Bearer Token</label>
             <div class="input-wrapper">
               <input type="password" class="form-input" id="bookingComApiKey" placeholder="Bearer token...">
-              <button type="button" class="input-btn-toggle" onclick="togglePasswordVisibility(bookingComApiKey)"><i class="fa-solid fa-eye"></i></button>
+              <button type="button" class="input-btn-toggle" onclick="togglePasswordVisibility('bookingComApiKey')"><i class="fa-solid fa-eye"></i></button>
             </div>
           </div>
           <div class="form-group">
@@ -351,38 +416,45 @@
         </div>
         <div class="admin-card-footer">
           <div class="test-result-box" id="result-booking_com">Ready to test connection.</div>
-          <button type="button" class="btn-test-provider" onclick="testProviderConnection(booking_com)">
-            <i class="fa-solid fa-bolt"></i> Test Booking.com
+          <button type="button" class="btn-test-provider" onclick="testProviderConnection('booking_com')">
+            <i class="fa-solid fa-bolt"></i> Test Hotel Engine
           </button>
         </div>
       </div>
 
-      <!-- 4. Payments Provider (Booking.com Payments API) -->
+      <!-- 4. Payments Provider (Booking.com Payments / Mock) -->
       <div class="admin-card">
         <div class="admin-card-header">
-          <h3><i class="fa-solid fa-credit-card" style="color: #10B981;"></i> Payment Processing (Booking.com Payments API)</h3>
+          <h3><i class="fa-solid fa-credit-card" style="color: #10B981;"></i> Payment Processing Engine</h3>
           <span class="status-badge" id="badge-booking_com_payments">Checking...</span>
+        </div>
+        <div class="form-group">
+          <label>Payment Processing Mode</label>
+          <select class="form-input" id="paymentsProvider">
+            <option value="mock">Mock Data (Testing) — Instant simulated checkout without API key</option>
+            <option value="booking_com_payments">Live Booking.com Payments API (Requires API Key)</option>
+          </select>
         </div>
         <div class="form-group-row">
           <div class="form-group">
-            <label>Payment Mode</label>
+            <label>Payment Environment</label>
             <select class="form-input" id="paymentsEnvironment">
-              <option value="sandbox">Sandbox Test Mode (Instant Simulated Clearance)</option>
-              <option value="live">Live Production (Secure 3D-Secure Handoff)</option>
+              <option value="sandbox">Sandbox Test Environment</option>
+              <option value="live">Live Production Environment</option>
             </select>
           </div>
           <div class="form-group">
             <label>Booking.com Payments API Key</label>
             <div class="input-wrapper">
               <input type="password" class="form-input" id="bookingComPaymentsApiKey" placeholder="Payments API Key...">
-              <button type="button" class="input-btn-toggle" onclick="togglePasswordVisibility(bookingComPaymentsApiKey)"><i class="fa-solid fa-eye"></i></button>
+              <button type="button" class="input-btn-toggle" onclick="togglePasswordVisibility('bookingComPaymentsApiKey')"><i class="fa-solid fa-eye"></i></button>
             </div>
           </div>
         </div>
         <div class="admin-card-footer">
           <div class="test-result-box" id="result-booking_com_payments">Ready to test connection.</div>
-          <button type="button" class="btn-test-provider" onclick="testProviderConnection(booking_com_payments)">
-            <i class="fa-solid fa-bolt"></i> Test Payments API
+          <button type="button" class="btn-test-provider" onclick="testProviderConnection('booking_com_payments')">
+            <i class="fa-solid fa-bolt"></i> Test Payments Engine
           </button>
         </div>
       </div>
@@ -391,12 +463,13 @@
       <div class="admin-card">
         <div class="admin-card-header">
           <h3><i class="fa-solid fa-taxi" style="color: #F59E0B;"></i> Ground Transport & Transfers</h3>
-          <span class="status-badge live">4 Tiers Active</span>
+          <span class="status-badge live" id="badge-cab">4 Tiers Active</span>
         </div>
         <div class="form-group">
           <label>Transfer Dispatch Engine</label>
           <select class="form-input" id="cabProvider">
-            <option value="mock">Bidirectional Airport Transfer Dispatch (Standard, Executive, Electric, Van)</option>
+            <option value="mock">Mock Data (Testing) — 4 Vehicle Tiers (Standard, Executive, Electric, Van)</option>
+            <option value="standard">Standard Dispatch Engine (Production Routing)</option>
             <option value="uber">Live Uber / Aggregator Partner API (Stub)</option>
           </select>
         </div>
@@ -427,31 +500,49 @@
 
         document.getElementById("flightProvider").value = c.flightProvider || "mock";
         document.getElementById("amadeusApiKey").value = c.amadeusApiKey || "";
+        document.getElementById("amadeusApiSecret").value = c.amadeusApiSecret || "";
 
         document.getElementById("hotelProvider").value = c.hotelProvider || "mock";
         document.getElementById("bookingComApiKey").value = c.bookingComApiKey || "";
         document.getElementById("bookingComAffiliateId").value = c.bookingComAffiliateId || "";
 
+        document.getElementById("paymentsProvider").value = c.paymentsProvider || "mock";
         document.getElementById("paymentsEnvironment").value = c.paymentsEnvironment || "sandbox";
         document.getElementById("bookingComPaymentsApiKey").value = c.bookingComPaymentsApiKey || "";
 
         document.getElementById("cabProvider").value = c.cabProvider || "mock";
 
         // Update badges
-        updateBadge("gemini", c.hasGeminiKey, c.llmProvider === "gemini" ? (c.hasGeminiKey ? "Connected" : "Key Needed") : "Rule Engine");
-        updateBadge("amadeus", c.flightProvider === "amadeus" && c.hasAmadeusKey, c.flightProvider === "amadeus" ? "Live API" : "Mock Ready");
-        updateBadge("booking_com", c.hotelProvider === "booking_com" && c.hasBookingComKey, c.hotelProvider === "booking_com" ? "Live API" : "Demand v3 Ready");
-        updateBadge("booking_com_payments", c.hasPaymentsKey, c.hasPaymentsKey ? `${c.paymentsEnvironment.toUpperCase()} Active` : "Sandbox Ready");
+        const geminiStatus = c.llmProvider === "rule_engine" ? "mock" : (c.hasGeminiKey ? "live" : "error");
+        const geminiText = c.llmProvider === "rule_engine" ? "Rule Engine" : (c.hasGeminiKey ? "Gemini 2.5 Active" : "Key Needed");
+        updateBadge("gemini", geminiStatus, geminiText);
+
+        const flightStatus = c.flightProvider === "mock" ? "mock" : (c.hasAmadeusKey ? "live" : "error");
+        const flightText = c.flightProvider === "mock" ? "Mock Ready" : (c.hasAmadeusKey ? "Live API" : "Key Needed");
+        updateBadge("amadeus", flightStatus, flightText);
+
+        const hotelStatus = c.hotelProvider === "mock" ? "mock" : (c.hasBookingKey ? "live" : "error");
+        const hotelText = c.hotelProvider === "mock" ? "Mock Ready" : (c.hasBookingKey ? "Live API" : "Key Needed");
+        updateBadge("booking_com", hotelStatus, hotelText);
+
+        const payStatus = c.paymentsProvider === "mock" ? "mock" : (c.hasPaymentsKey ? "live" : "error");
+        const payText = c.paymentsProvider === "mock" ? "Mock Ready" : (c.hasPaymentsKey ? `${(c.paymentsEnvironment || "sandbox").toUpperCase()} Live` : "Key Needed");
+        updateBadge("booking_com_payments", payStatus, payText);
+
+        updateBadge("cab", c.cabProvider === "mock" ? "mock" : "live", c.cabProvider === "mock" ? "Mock Ready" : "Fleet Active");
       } catch (err) {
         console.error("Failed to load admin config:", err);
       }
     }
 
-    function updateBadge(id, isLive, text) {
+    function updateBadge(id, statusType, text) {
       const badge = document.getElementById(`badge-${id}`);
       if (!badge) return;
-      badge.className = `status-badge ${isLive ? "live" : "mock"}`;
-      badge.innerHTML = `<span class="status-dot" style="background: ${isLive ? "#10B981" : "#F59E0B"};"></span> ${text}`;
+      badge.className = `status-badge ${statusType}`;
+      let dotColor = '#10B981';
+      if (statusType === 'mock') dotColor = '#F59E0B';
+      if (statusType === 'error') dotColor = '#EF4444';
+      badge.innerHTML = `<span class="status-dot" style="background: ${dotColor};"></span> ${text}`;
     }
 
     function togglePasswordVisibility(fieldId) {
@@ -509,6 +600,7 @@
         bookingComApiKey: document.getElementById("bookingComApiKey").value,
         bookingComAffiliateId: document.getElementById("bookingComAffiliateId").value,
 
+        paymentsProvider: document.getElementById("paymentsProvider").value,
         paymentsEnvironment: document.getElementById("paymentsEnvironment").value,
         bookingComPaymentsApiKey: document.getElementById("bookingComPaymentsApiKey").value,
 
@@ -534,7 +626,30 @@
       }
     }
 
-    window.addEventListener("DOMContentLoaded", loadConfig);
+    function initAdminTheme() {
+      const currentTheme = localStorage.getItem('skyvoyage_theme') || 'light';
+      setAdminTheme(currentTheme);
+
+      const btnLight = document.getElementById('btnThemeLight');
+      const btnDark = document.getElementById('btnThemeDark');
+      if (btnLight) btnLight.addEventListener('click', () => setAdminTheme('light'));
+      if (btnDark) btnDark.addEventListener('click', () => setAdminTheme('dark'));
+    }
+
+    function setAdminTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('skyvoyage_theme', theme);
+
+      const btnLight = document.getElementById('btnThemeLight');
+      const btnDark = document.getElementById('btnThemeDark');
+      if (btnLight) btnLight.classList.toggle('active', theme === 'light');
+      if (btnDark) btnDark.classList.toggle('active', theme === 'dark');
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      initAdminTheme();
+      loadConfig();
+    });
   </script>
 </body>
 </html>

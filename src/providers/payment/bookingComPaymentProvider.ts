@@ -49,8 +49,12 @@ export class BookingComPaymentProvider {
     );
   }
 
+  public isMock(): boolean {
+    return (process.env.PAYMENTS_PROVIDER || 'booking_com_payments') === 'mock';
+  }
+
   /**
-   * Create checkout / payment session compatible with Booking.com Payments API
+   * Create checkout / payment session compatible with Booking.com Payments API (Live or Mock Testing)
    */
   async createPaymentSession(
     booking: {
@@ -63,6 +67,23 @@ export class BookingComPaymentProvider {
     }
   ): Promise<PaymentSessionResponse> {
     this.refreshConfig();
+
+    if (this.isMock()) {
+      const sessionId = `bkg_pay_mock_${Math.random().toString(36).substring(2, 11)}_${Date.now()}`;
+      const orderToken = booking.orderToken || `ord_token_${Math.random().toString(36).substring(2, 10)}`;
+      return {
+        sessionId,
+        amount: booking.totalCost,
+        currency: booking.currency || 'USD',
+        environment: 'sandbox',
+        status: 'authorized',
+        provider: 'Booking.com Payments (Mock Testing Mode)',
+        transactionId: `tx_mock_${Math.random().toString(36).substring(2, 12)}`,
+        orderToken,
+        checkoutUrl: `/checkout/mock/${sessionId}`,
+        createdAt: new Date().toISOString()
+      };
+    }
 
     if (!this.hasApiKey()) {
       throw new Error('NO_API_KEY: No Booking.com Payments API Key inserted. Please configure BOOKING_COM_PAYMENTS_API_KEY in the Admin Dashboard (/admin.html).');
@@ -91,13 +112,30 @@ export class BookingComPaymentProvider {
   }
 
   /**
-   * Verify and capture authorized payment
+   * Verify and capture authorized payment (Live or Mock Testing)
    */
   async verifyPayment(
     paymentSessionId: string, 
     paymentMethod: string = 'credit_card'
   ): Promise<PaymentVerificationResult> {
     this.refreshConfig();
+
+    if (this.isMock()) {
+      const txId = `tx_bkg_mock_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+      const authCode = `AUTH-MOCK-${Math.floor(100000 + Math.random() * 900000)}`;
+
+      return {
+        success: true,
+        transactionId: txId,
+        status: 'captured',
+        amount: 0,
+        currency: 'USD',
+        authCode,
+        paymentMethod: paymentMethod || 'Credit Card (Simulated Clearance)',
+        message: 'Mock Payment authorized and captured successfully for testing.',
+        timestamp: new Date().toISOString()
+      };
+    }
 
     if (!this.hasApiKey()) {
       throw new Error('NO_API_KEY: No Booking.com Payments API Key inserted. Please configure BOOKING_COM_PAYMENTS_API_KEY in the Admin Dashboard (/admin.html).');

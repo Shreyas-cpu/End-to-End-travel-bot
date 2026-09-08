@@ -88,6 +88,39 @@ function setupEventListeners() {
     sidebar.classList.remove('open');
     backdrop.classList.remove('active');
   });
+
+  // Initialize Theme (Light / Dark)
+  initTheme();
+}
+
+function initTheme() {
+  const savedTheme = localStorage.getItem('skyvoyage_theme') || 'light';
+  setTheme(savedTheme);
+
+  const btnLight = document.getElementById('btnThemeLight');
+  const btnDark = document.getElementById('btnThemeDark');
+
+  if (btnLight) {
+    btnLight.addEventListener('click', () => setTheme('light'));
+  }
+  if (btnDark) {
+    btnDark.addEventListener('click', () => setTheme('dark'));
+  }
+}
+
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('skyvoyage_theme', theme);
+
+  const btnLight = document.getElementById('btnThemeLight');
+  const btnDark = document.getElementById('btnThemeDark');
+  if (btnLight) btnLight.classList.toggle('active', theme === 'light');
+  if (btnDark) btnDark.classList.toggle('active', theme === 'dark');
+
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (metaTheme) {
+    metaTheme.setAttribute('content', theme === 'light' ? '#003580' : '#001e33');
+  }
 }
 
 async function sendMessage(text, actionPayload = null) {
@@ -169,31 +202,30 @@ async function updateProviderHealthBadges() {
     const payBadge = document.getElementById('pay-badge');
     const llmBadge = document.getElementById('llm-badge');
 
-    if (bkgBadge && data.providers.hotels) {
-      const ok = data.providers.hotels.configured;
-      bkgBadge.textContent = ok ? 'Live API' : 'No API Key';
-      bkgBadge.className = `pill-badge ${ok ? 'live' : 'error'}`;
-      bkgBadge.title = data.providers.hotels.status || '';
-    }
+    const updateSingleBadge = (el, info) => {
+      if (!el || !info) return;
+      if (info.mode === 'mock') {
+        el.textContent = 'Mock Mode';
+        el.className = 'pill-badge mock';
+      } else if (info.configured) {
+        el.textContent = 'Live API';
+        el.className = 'pill-badge live';
+      } else {
+        el.textContent = 'No API Key';
+        el.className = 'pill-badge error';
+      }
+      el.title = info.status || '';
+    };
 
-    if (fltBadge && data.providers.flights) {
-      const ok = data.providers.flights.configured;
-      fltBadge.textContent = ok ? 'Live API' : 'No API Key';
-      fltBadge.className = `pill-badge ${ok ? 'live' : 'error'}`;
-      fltBadge.title = data.providers.flights.status || '';
-    }
-
-    if (payBadge && data.providers.payments) {
-      const ok = data.providers.payments.configured;
-      payBadge.textContent = ok ? 'Live API' : 'No API Key';
-      payBadge.className = `pill-badge ${ok ? 'live' : 'error'}`;
-      payBadge.title = data.providers.payments.status || '';
-    }
+    updateSingleBadge(bkgBadge, data.providers.hotels);
+    updateSingleBadge(fltBadge, data.providers.flights);
+    updateSingleBadge(payBadge, data.providers.payments);
 
     if (llmBadge && data.providers.llm) {
       const ok = data.providers.llm.configured;
-      llmBadge.textContent = ok ? 'Gemini 2.5' : 'No API Key';
-      llmBadge.className = `pill-badge ${ok ? 'live' : 'error'}`;
+      const isRule = data.providers.llm.provider === 'rule_engine';
+      llmBadge.textContent = isRule ? 'Rule Engine' : (ok ? 'Gemini 2.5' : 'No API Key');
+      llmBadge.className = `pill-badge ${isRule ? 'mock' : (ok ? 'live' : 'error')}`;
       llmBadge.title = data.providers.llm.status || '';
     }
   } catch (err) {
@@ -228,7 +260,7 @@ function appendAssistantMessage(text, cards) {
   }
 
   row.innerHTML = `
-    <div class="avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+    <div class="avatar"><i class="fa-solid fa-compass"></i></div>
     <div class="message-content">
       <div class="message-bubble">
         ${formattedText}

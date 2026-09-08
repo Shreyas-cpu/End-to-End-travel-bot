@@ -24,11 +24,15 @@ app.use(express.static(path.join(process.cwd(), 'public')));
  * Health check & Provider diagnostics
  */
 app.get('/api/health', (req: Request, res: Response) => {
-  adminConfigService.getConfig();
+  const cfg = adminConfigService.getConfig();
   const hasAmadeus = Boolean(process.env.AMADEUS_API_KEY && process.env.AMADEUS_API_KEY.trim() !== '' && !process.env.AMADEUS_API_KEY.includes('xxxx'));
   const hasBooking = Boolean(process.env.BOOKING_COM_API_KEY && process.env.BOOKING_COM_API_KEY.trim() !== '' && !process.env.BOOKING_COM_API_KEY.includes('xxxx'));
   const hasPayments = Boolean(process.env.BOOKING_COM_PAYMENTS_API_KEY && process.env.BOOKING_COM_PAYMENTS_API_KEY.trim() !== '' && !process.env.BOOKING_COM_PAYMENTS_API_KEY.includes('xxxx'));
   const hasGemini = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== '' && !process.env.GEMINI_API_KEY.includes('xxxx'));
+
+  const flightMode = cfg.flightProvider === 'mock' ? 'mock' : 'live';
+  const hotelMode = cfg.hotelProvider === 'mock' ? 'mock' : 'live';
+  const paymentsMode = cfg.paymentsProvider === 'mock' ? 'mock' : 'live';
 
   res.json({
     status: 'healthy',
@@ -36,26 +40,30 @@ app.get('/api/health', (req: Request, res: Response) => {
     framework: 'Travel Booking AI Assistant Framework',
     providers: {
       hotels: {
-        provider: 'booking_com',
-        target: 'Booking.com Demand API v3',
-        configured: hasBooking,
-        status: hasBooking ? 'Live API Configured' : 'Error: No API Key Inserted'
+        provider: cfg.hotelProvider,
+        target: hotelMode === 'mock' ? 'Booking.com Demand v3 Mock (Testing)' : 'Booking.com Demand API v3',
+        mode: hotelMode,
+        configured: hotelMode === 'mock' || hasBooking,
+        status: hotelMode === 'mock' ? 'Mock Mode Active (Testing)' : (hasBooking ? 'Live API Configured' : 'Error: No API Key Inserted')
       },
       flights: {
-        provider: 'amadeus',
-        target: 'Amadeus Flight Offers v2',
-        configured: hasAmadeus,
-        status: hasAmadeus ? 'Live API Configured' : 'Error: No API Key Inserted'
+        provider: cfg.flightProvider,
+        target: flightMode === 'mock' ? 'Amadeus Mock Flight Adapter (Testing)' : 'Amadeus Flight Offers v2',
+        mode: flightMode,
+        configured: flightMode === 'mock' || hasAmadeus,
+        status: flightMode === 'mock' ? 'Mock Mode Active (Testing)' : (hasAmadeus ? 'Live API Configured' : 'Error: No API Key Inserted')
       },
       payments: {
-        provider: 'booking_com_payments',
-        target: 'Booking.com Payments API',
-        configured: hasPayments,
-        status: hasPayments ? 'Live API Configured' : 'Error: No API Key Inserted'
+        provider: cfg.paymentsProvider,
+        target: paymentsMode === 'mock' ? 'Booking.com Payments Mock (Testing)' : 'Booking.com Payments API',
+        mode: paymentsMode,
+        configured: paymentsMode === 'mock' || hasPayments,
+        status: paymentsMode === 'mock' ? 'Mock Mode Active (Testing)' : (hasPayments ? 'Live API Configured' : 'Error: No API Key Inserted')
       },
       cabs: {
-        provider: process.env.CAB_PROVIDER || 'standard',
+        provider: cfg.cabProvider || 'standard',
         target: 'Ground Transfer Dispatch',
+        mode: cfg.cabProvider === 'mock' ? 'mock' : 'live',
         status: 'Active'
       },
       ticketing: {
@@ -63,9 +71,9 @@ app.get('/api/health', (req: Request, res: Response) => {
         status: 'Active'
       },
       llm: {
-        provider: 'gemini',
-        configured: hasGemini,
-        status: hasGemini ? 'Google Gemini 2.5 Flash Connected & Active' : 'Error: No API Key Inserted'
+        provider: cfg.llmProvider,
+        configured: cfg.llmProvider === 'rule_engine' || hasGemini,
+        status: cfg.llmProvider === 'rule_engine' ? 'Deterministic Rule Engine Active' : (hasGemini ? 'Google Gemini 2.5 Flash Connected & Active' : 'Error: No API Key Inserted')
       }
     }
   });

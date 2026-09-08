@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
-  <title>SkyVoyage AI | Intelligent Travel Booking Assistant</title>
-  <meta name="description" content="AI-first travel booking framework for discovering flights, Booking.com accommodations, transfers, and automated PDF ticketing.">
-  <meta name="theme-color" content="#0B0F19">
+  <title>SkyVoyage | Booking.com Travel Concierge & Ticketing</title>
+  <meta name="description" content="Premier travel booking concierge for discovering flights, Booking.com accommodations, transfers, and automated PDF ticketing.">
+  <meta name="theme-color" content="#003580">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -27,8 +27,8 @@
           <i class="fa-solid fa-plane-departure"></i>
         </div>
         <div class="brand-text">
-          <h2>SkyVoyage <span>AI</span></h2>
-          <p>Travel Booking Framework</p>
+          <h2>SkyVoyage <span class="brand-tag">PRO</span></h2>
+          <p>Booking.com Concierge</p>
         </div>
       </div>
 
@@ -119,12 +119,21 @@
         <div class="header-left">
           <button class="mobile-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
           <div>
-            <h1>Conversational Travel Concierge</h1>
-            <p class="status-indicator"><span class="status-dot"></span> AI Travel Orchestrator Online</p>
+            <h1>SkyVoyage Concierge</h1>
+            <p class="status-indicator"><span class="status-dot"></span> Live Booking Engine Online</p>
           </div>
         </div>
         <div class="header-actions">
-          <a href="/admin.html" class="header-btn" title="Admin Dashboard & API Manager" style="border-color: rgba(59, 130, 246, 0.4); color: #60A5FA;">
+          <!-- Theme Switcher Pill -->
+          <div class="theme-switcher-pill" id="themeSwitcher" title="Switch Theme">
+            <button type="button" class="theme-btn active" id="btnThemeLight" data-theme="light" title="Navy Blue & White (Light Theme)">
+              <i class="fa-solid fa-sun"></i> <span>Navy Light</span>
+            </button>
+            <button type="button" class="theme-btn" id="btnThemeDark" data-theme="dark" title="Light Blue & Black (Dark Theme)">
+              <i class="fa-solid fa-moon"></i> <span>Midnight Dark</span>
+            </button>
+          </div>
+          <a href="/admin.html" class="header-btn" title="Admin Dashboard & API Manager">
             <i class="fa-solid fa-sliders"></i> Admin Dashboard
           </a>
           <a href="/api/health" target="_blank" class="header-btn" title="API Diagnostics">
@@ -137,14 +146,15 @@
       <div class="messages-container" id="messagesContainer">
         <!-- Initial Greeting Message -->
         <div class="message-row assistant">
-          <div class="avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+          <div class="avatar"><i class="fa-solid fa-compass"></i></div>
           <div class="message-content">
             <div class="message-bubble">
-              <p>👋 Hello! I am your <strong>AI Travel Assistant</strong>. Tell me where you'd like to travel, and I'll find top flights, <strong>Booking.com accommodations</strong>, airport transfers, and prepare your official <strong>PDF tickets & vouchers</strong> directly in this chat.</p>
+              <p>👋 Hello! I am your <strong>SkyVoyage Travel Concierge</strong>. Tell me where you'd like to travel, and I'll find top flights, handpicked <strong>Booking.com accommodations</strong>, airport transfers, and prepare your official <strong>PDF tickets & vouchers</strong> directly in this chat.</p>
               <div class="quick-suggestions">
-                <button class="quick-chip" data-prompt="Plan a 4-day trip to Paris for 2 people starting next month"><i class="fa-solid fa-plane"></i> 4 Days in Paris (2 Guests)</button>
+                <button class="quick-chip" data-prompt="Plan a 4-day trip to Paris for 2 people starting next month"><i class="fa-solid fa-plane-departure"></i> 4 Days in Paris (2 Guests)</button>
                 <button class="quick-chip" data-prompt="Find a luxury trip to Tokyo for next month"><i class="fa-solid fa-torii-gate"></i> Luxury Tokyo Getaway</button>
                 <button class="quick-chip" data-prompt="Plan a trip from London to Rome for 2 people"><i class="fa-solid fa-landmark"></i> London to Rome</button>
+                <button class="quick-chip" data-prompt="Book a 3-day stay in New York with flights and hotel"><i class="fa-solid fa-city"></i> New York Weekend</button>
               </div>
             </div>
           </div>
@@ -153,7 +163,7 @@
 
       <!-- Typing Indicator -->
       <div class="typing-indicator" id="typingIndicator" style="display: none;">
-        <div class="avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        <div class="avatar"><i class="fa-solid fa-compass"></i></div>
         <div class="typing-bubble">
           <div class="dot"></div>
           <div class="dot"></div>
@@ -167,7 +177,7 @@
           <input 
             type="text" 
             id="messageInput" 
-            placeholder="Type your travel request (e.g. 'Plan a trip to London for 2 people')..." 
+            placeholder="Where would you like to travel? (e.g. 'Plan a 4-day trip to Paris for 2')..." 
             autocomplete="off"
             required
           />

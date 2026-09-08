@@ -2,15 +2,15 @@ import fs from "fs";
 import path from "path";
 
 export interface AdminConfig {
-  flightProvider: "amadeus";
+  flightProvider: "mock" | "amadeus";
   amadeusApiKey?: string;
   amadeusApiSecret?: string;
 
-  hotelProvider: "booking_com";
+  hotelProvider: "mock" | "booking_com";
   bookingComApiKey?: string;
   bookingComAffiliateId?: string;
 
-  paymentsProvider: "booking_com_payments";
+  paymentsProvider: "mock" | "booking_com_payments";
   bookingComPaymentsApiKey?: string;
   paymentsEnvironment: "sandbox" | "live";
 
@@ -18,7 +18,7 @@ export interface AdminConfig {
   geminiApiKey?: string;
   geminiModel?: string;
 
-  cabProvider: "standard" | "uber";
+  cabProvider: "mock" | "standard" | "uber";
   updatedAt: string;
 }
 
@@ -215,6 +215,16 @@ export class AdminConfigService {
     }
 
     if (provider === "amadeus") {
+      if (this.currentConfig.flightProvider === "mock") {
+        return {
+          provider: "Amadeus Mock Flight Adapter",
+          success: true,
+          status: "Active (Mock Testing Mode)",
+          message: "Mock flight offers engine active with 4 cabin classes and departure period filters. No API key required.",
+          latencyMs: Date.now() - start + 2
+        };
+      }
+
       const key = this.currentConfig.amadeusApiKey;
       const secret = this.currentConfig.amadeusApiSecret;
 
@@ -223,7 +233,7 @@ export class AdminConfigService {
           provider: "Amadeus Flight Offers v2",
           success: false,
           status: "Error: No API Key Inserted",
-          message: "Amadeus API Key and API Secret are missing. Please enter both credentials above.",
+          message: "Amadeus API Key and API Secret are missing. Please enter both credentials above, or switch to Mock Mode for testing.",
           latencyMs: Date.now() - start
         };
       }
@@ -271,6 +281,16 @@ export class AdminConfigService {
     }
 
     if (provider === "booking_com") {
+      if (this.currentConfig.hotelProvider === "mock") {
+        return {
+          provider: "Booking.com Demand v3 Mock",
+          success: true,
+          status: "Active (Mock Testing Mode)",
+          message: "Mock accommodation engine active with photo carousels, airport default, and price sorting. No API key required.",
+          latencyMs: Date.now() - start + 2
+        };
+      }
+
       const key = this.currentConfig.bookingComApiKey;
 
       if (!key || key.trim() === "" || key.includes("xxxx")) {
@@ -278,7 +298,7 @@ export class AdminConfigService {
           provider: "Booking.com Demand API v3",
           success: false,
           status: "Error: No API Key Inserted",
-          message: "Booking.com Demand API Key is missing. Please enter your API Key above.",
+          message: "Booking.com Demand API Key is missing. Please enter your API Key above, or switch to Mock Mode for testing.",
           latencyMs: Date.now() - start
         };
       }
@@ -331,6 +351,16 @@ export class AdminConfigService {
     }
 
     if (provider === "booking_com_payments") {
+      if (this.currentConfig.paymentsProvider === "mock") {
+        return {
+          provider: "Booking.com Payments Mock",
+          success: true,
+          status: "Active (Mock Testing Mode)",
+          message: "Mock payment session generator active for testing. Instant simulated checkout without API key.",
+          latencyMs: Date.now() - start + 2
+        };
+      }
+
       const key = this.currentConfig.bookingComPaymentsApiKey;
       const env = this.currentConfig.paymentsEnvironment || "sandbox";
 
@@ -339,7 +369,7 @@ export class AdminConfigService {
           provider: "Booking.com Payments API",
           success: false,
           status: "Error: No API Key Inserted",
-          message: "Booking.com Payments API Key is missing. Please enter your API Key above.",
+          message: "Booking.com Payments API Key is missing. Please enter your API Key above, or switch to Mock Mode for testing.",
           latencyMs: Date.now() - start
         };
       }
@@ -349,7 +379,17 @@ export class AdminConfigService {
         success: true,
         status: `Active (${env.toUpperCase()})`,
         message: `Booking.com Payments API key loaded for ${env} transactions.`,
-        latencyMs: Date.now() - start + 10
+        latencyMs: Date.now() - start + 5
+      };
+    }
+
+    if (provider === "cab" || provider === "standard") {
+      return {
+        provider: "Ground Transport Transfers",
+        success: true,
+        status: "Active (4 Vehicle Classes)",
+        message: "Bidirectional transfer routing (Standard, Executive, Electric, Van).",
+        latencyMs: Date.now() - start + 2
       };
     }
 
