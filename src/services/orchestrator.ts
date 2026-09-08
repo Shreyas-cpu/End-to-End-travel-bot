@@ -140,11 +140,47 @@ export class TravelOrchestrator {
     const effectiveCabin = ruleExtracted.preferredCabin || profile.preferredCabin || 'Economy';
     const effectiveTimePref = ruleExtracted.timePreference || profile.preferredDeparturePeriod;
 
-    const destination = aiExtracted.destination || ruleExtracted.destination || session.destination || 'Paris';
-    const origin = aiExtracted.origin || ruleExtracted.origin || session.origin || 'New York (JFK)';
-    const startDate = aiExtracted.startDate || ruleExtracted.startDate || session.startDate || '2026-10-12';
-    const endDate = aiExtracted.endDate || ruleExtracted.endDate || session.endDate || '2026-10-16';
+    const destination = aiExtracted.destination || ruleExtracted.destination || session.destination;
+    const origin = aiExtracted.origin || ruleExtracted.origin || session.origin;
+    const startDate = aiExtracted.startDate || ruleExtracted.startDate || session.startDate;
+    const endDate = aiExtracted.endDate || ruleExtracted.endDate || session.endDate;
     const guests = aiExtracted.guests || ruleExtracted.guests || session.guests || 2;
+
+    // Conversational Trip Planning:
+    // If the traveler hasn't specified both origin and destination yet (e.g. they said "book me a flight" or "help me plan a trip"),
+    // talk with them conversationally (via Gemini if available) to gather the missing details (from where to where and when).
+    // Do NOT trigger flight search API or show missing API key error until the necessary route is provided!
+    if (!destination || !origin) {
+      await prisma.session.update({
+        where: { id: session.id },
+        data: {
+          destination: destination || null,
+          origin: origin || null,
+          startDate: startDate || null,
+          endDate: endDate || null,
+          guests,
+          currentStep: 'INITIATION'
+        }
+      });
+
+      const conversationalReply = await geminiService.planTripConversation(input, {
+        destination,
+        origin,
+        startDate,
+        endDate,
+        guests
+      });
+
+      await this.saveBotMessage(session.id, conversationalReply);
+      return {
+        sessionId: session.id,
+        reply: conversationalReply,
+        step: 'INITIATION'
+      };
+    }
+
+    const effectiveStartDate = startDate || '2026-10-12';
+    const effectiveEndDate = endDate || '2026-10-16';
 
     const isMockFlights = (process.env.FLIGHT_PROVIDER || 'amadeus') === 'mock';
     if (!isMockFlights && !amadeusFlightProvider.hasApiKey()) {
@@ -153,8 +189,8 @@ export class TravelOrchestrator {
         data: {
           destination,
           origin,
-          startDate,
-          endDate,
+          startDate: effectiveStartDate,
+          endDate: effectiveEndDate,
           guests,
           currentStep: 'INITIATION'
         }
@@ -186,8 +222,8 @@ export class TravelOrchestrator {
       data: {
         destination,
         origin,
-        startDate,
-        endDate,
+        startDate: effectiveStartDate,
+        endDate: effectiveEndDate,
         guests,
         currentStep: 'FLIGHT_SELECTION'
       }
@@ -198,8 +234,8 @@ export class TravelOrchestrator {
       flightOffers = await amadeusFlightProvider.searchFlights({
         origin,
         destination,
-        startDate,
-        endDate,
+        startDate: effectiveStartDate,
+        endDate: effectiveEndDate,
         guests,
         timePreference: effectiveTimePref,
         preferredCabin: effectiveCabin
@@ -271,13 +307,25 @@ export class TravelOrchestrator {
     const clean = (input || '').trim().toLowerCase();
     if (clean.length === 0) return false;
 
+    // Booking and trip planning commands should be routed to conversational trip planning, NOT treated as generic questions
+    const bookingPhrases = [
+      'book me a flight', 'book a flight', 'book flight', 'book me', 'book a trip', 'book trip',
+      'can you book', 'could you book', 'can i book', 'help me book', 'help me plan',
+      'plan a trip', 'plan my trip', 'plan my travel', 'i want to book', 'i want to fly',
+      'i want to travel', 'need a flight', 'find a flight', 'find flights', 'search flight',
+      'fly to', 'trip to', 'tickets to', 'flights to'
+    ];
+    if (bookingPhrases.some(bp => clean.includes(bp))) {
+      return false;
+    }
+
     // Direct question mark
     const hasQuestionMark = clean.includes('?');
 
     // Common question starters
     const questionStarters = [
       'what', 'why', 'how', 'when', 'where', 'who', 'which',
-      'can you', 'could you', 'would you', 'tell me', 'explain',
+      'can you tell', 'can you explain', 'tell me', 'explain',
       'is it', 'is there', 'are there', 'do you', 'do i', 'does ',
       'should i', 'recommend', 'suggest', 'help me with', 'help me understand',
       'what is', 'what are', 'how do', 'how can', 'how much'
@@ -294,21 +342,7 @@ export class TravelOrchestrator {
     ];
     const mentionsAdvisoryTopic = advisoryTopics.some(topic => clean.includes(topic));
 
-    if (!hasQuestionMark && !startsWithQuestion && !mentionsAdvisoryTopic) {
-      return false;
-    }
-
-    // Disambiguate booking commands like "Can you book a flight from New York to Paris"
-    const hasBookingVerb = clean.includes('book') || clean.includes('fly to') || clean.includes('trip to') || clean.includes('tickets to');
-    const knownDestinations = ['paris', 'london', 'tokyo', 'rome', 'dubai', 'bali', 'singapore', 'new york', 'nyc'];
-    const hasDestination = knownDestinations.some(d => clean.includes(d));
-    const hasOrigin = clean.includes('from ');
-
-    if (hasBookingVerb && (hasDestination || hasOrigin)) {
-      return false;
-    }
-
-    return true;
+    return hasQuestionMark || startsWithQuestion || mentionsAdvisoryTopic;
   }
 
   /**
@@ -858,22 +892,27 @@ export class TravelOrchestrator {
    */
   private extractTripEntities(text: string) {
     const lower = text.toLowerCase();
-    let destination = 'Paris';
-    let origin = 'New York (JFK)';
-    let startDate = '2026-10-12';
-    let endDate = '2026-10-16';
-    let guests = 2;
+    let destination: string | undefined = undefined;
+    let origin: string | undefined = undefined;
+    let startDate: string | undefined = undefined;
+    let endDate: string | undefined = undefined;
+    let guests: number | undefined = undefined;
     let timePreference: string | undefined = undefined;
     let preferredCabin: any = undefined;
 
     // Detect destinations
     if (lower.includes('london')) destination = 'London';
     else if (lower.includes('tokyo')) destination = 'Tokyo';
+    else if (lower.includes('paris')) destination = 'Paris';
     else if (lower.includes('rome')) destination = 'Rome';
     else if (lower.includes('dubai')) destination = 'Dubai';
     else if (lower.includes('bali')) destination = 'Bali';
     else if (lower.includes('singapore')) destination = 'Singapore';
-    else if (lower.includes('new york') || lower.includes('nyc')) destination = 'New York';
+    else if (lower.includes('new york') || lower.includes('nyc')) {
+      if (!lower.includes('from new york') && !lower.includes('from nyc') && !lower.includes('from jfk')) {
+        destination = 'New York';
+      }
+    }
 
     // Detect origins
     if (lower.includes('from london')) origin = 'London (LHR)';
@@ -881,6 +920,23 @@ export class TravelOrchestrator {
     else if (lower.includes('from chicago')) origin = 'Chicago (ORD)';
     else if (lower.includes('from los angeles') || lower.includes('from lax')) origin = 'Los Angeles (LAX)';
     else if (lower.includes('from tokyo')) origin = 'Tokyo (HND)';
+    else if (lower.includes('from new york') || lower.includes('from nyc') || lower.includes('from jfk')) origin = 'New York (JFK)';
+    else if (lower.includes('from paris')) origin = 'Paris (CDG)';
+
+    // Detect dates
+    const dateMatch = lower.match(/(\d{4}-\d{2}-\d{2})/);
+    if (dateMatch) {
+      startDate = dateMatch[1];
+    } else if (lower.includes('oct 12') || lower.includes('october 12')) {
+      startDate = '2026-10-12';
+      endDate = '2026-10-16';
+    } else if (lower.includes('next month')) {
+      startDate = '2026-10-12';
+      endDate = '2026-10-16';
+    } else if (lower.includes('next week')) {
+      startDate = '2026-09-15';
+      endDate = '2026-09-20';
+    }
 
     // Detect guests
     const guestMatch = lower.match(/(\d+)\s*(people|person|traveler|guests|adults)/);

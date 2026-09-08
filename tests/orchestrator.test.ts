@@ -82,9 +82,17 @@ async function runTestSuite() {
 
   // --- 2. Chat Orchestrator Error Cards & Admin Links ---
   console.log('\n2️⃣ Phase 2: Conversational Orchestrator Missing Key Error Handling');
-  const missingKeyChat = await travelOrchestrator.processMessage(undefined, 'I want to travel to London from New York next month');
+  
+  // 2.1 Conversational inquiry when origin/destination missing (No premature error card)
+  const conversationalFlightChat = await travelOrchestrator.processMessage(undefined, 'book me a flight');
+  assert(conversationalFlightChat.step === 'INITIATION', 'Chatbot remains in INITIATION to plan trip');
+  assert(conversationalFlightChat.cards === undefined, 'No error card shown when user is conversing to plan trip');
+  assert(conversationalFlightChat.reply.includes('Where are you departing from') || conversationalFlightChat.reply.includes('where'), 'Chatbot conversationally asks from where, to where, and when');
+
+  // 2.2 Route provided: Now that the system wants to show flights, Amadeus missing key error is raised
+  const missingKeyChat = await travelOrchestrator.processMessage(conversationalFlightChat.sessionId, 'I want to travel to London from New York next month');
   assert(missingKeyChat.step === 'INITIATION', 'Chatbot remains in INITIATION when flight API key is missing');
-  assert(missingKeyChat.cards?.type === 'error', 'Chatbot responds with error card type');
+  assert(missingKeyChat.cards?.type === 'error', 'Chatbot responds with error card type when trying to fetch flights');
   assert(missingKeyChat.cards?.data?.missingKey.includes('AMADEUS_API_KEY'), 'Error card highlights missing AMADEUS_API_KEY');
   assert(missingKeyChat.cards?.data?.actionUrl === '/admin.html', 'Error card directs user to /admin.html');
   assert(missingKeyChat.reply.includes('Amadeus Flight API Key Missing'), 'Reply text explains key requirement and admin setup');
