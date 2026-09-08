@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../db';
 import { amadeusFlightProvider } from '../providers/flight/amadeusProvider';
 import { bookingComProvider } from '../providers/hotel/bookingComProvider';
 import { cabTransferProvider } from '../providers/cab/transferProvider';
@@ -8,8 +8,6 @@ import { userProfileService } from './userProfileService';
 import { travelRAGService } from './ragService';
 import { bookingComPaymentProvider } from '../providers/payment/bookingComPaymentProvider';
 import { FlightOffer, HotelAccommodation, CabTransfer, BookingDetails } from '../providers/types';
-
-const prisma = new PrismaClient();
 
 export interface ChatResponse {
   sessionId: string;

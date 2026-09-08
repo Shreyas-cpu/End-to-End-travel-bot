@@ -2,7 +2,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import path from 'path';
 import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from './db';
 import { travelOrchestrator } from './services/orchestrator';
 import { userProfileService } from './services/userProfileService';
 import { travelRAGService } from './services/ragService';
@@ -10,13 +10,7 @@ import { adminConfigService } from './services/adminConfigService';
 
 dotenv.config();
 
-// Fallback DATABASE_URL for serverless environments
-if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = "file:./dev.db";
-}
-
 const app = express();
-const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
