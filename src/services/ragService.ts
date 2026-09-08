@@ -15,6 +15,11 @@ export interface GuardrailResult {
   suggestedPrompt?: string;
 }
 
+export interface GuardrailOptions {
+  /** True while the traveler is mid-booking, so replies like "from mumbai at 25 october" are trip details */
+  inActiveBooking?: boolean;
+}
+
 export class TravelRAGService {
   private knowledgeDir: string;
   private chunks: KnowledgeChunk[] = [];
@@ -82,7 +87,7 @@ export class TravelRAGService {
   /**
    * Domain Guardrail: Determines if the user input falls within the Travel & Booking domain
    */
-  isTravelRelated(input: string): GuardrailResult {
+  isTravelRelated(input: string, options: GuardrailOptions = {}): GuardrailResult {
     const clean = (input || "").toLowerCase().trim();
     if (!clean) {
       return { allowed: true };
@@ -114,9 +119,14 @@ export class TravelRAGService {
       };
     }
 
-    // Check for presence of travel terms or destinations
+    // Inside an active booking every remaining message is trip detail (cities, dates, guests)
+    if (options.inActiveBooking) {
+      return { allowed: true };
+    }
+
+    // Check for presence of travel terms, destinations or itinerary details (dates, routes)
     const hasTravelKeyword = words.some(w => this.travelKeywords.has(w));
-    if (hasTravelKeyword || words.length <= 4) {
+    if (hasTravelKeyword || this.looksLikeItineraryDetail(clean) || words.length <= 4) {
       return { allowed: true };
     }
 
@@ -126,6 +136,21 @@ export class TravelRAGService {
       reason: "Query does not appear related to travel, flights, hotels, or ground transport.",
       suggestedPrompt: "🌐 Please ask me anything related to your travel plans — such as finding flights, booking hotels near the airport, organizing transfers, or checking baggage allowances!"
     };
+  }
+
+  /**
+   * Recognise itinerary details that carry no explicit travel noun,
+   * e.g. "from mumbai at 25 october" or "delhi to goa, 2 adults"
+   */
+  private looksLikeItineraryDetail(clean: string): boolean {
+    const hasMonth = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/.test(clean);
+    const hasDate = /\b\d{1,2}[\/-]\d{1,2}([\/-]\d{2,4})?\b/.test(clean) ||
+                    /\b\d{4}-\d{2}-\d{2}\b/.test(clean) ||
+                    /\b(today|tomorrow|tonight|next week|next month|weekend)\b/.test(clean);
+    const hasRoute = /\bfrom\s+[a-z]/.test(clean) || /\b[a-z]{3,}\s+to\s+[a-z]{3,}/.test(clean);
+    const hasPartyOrStay = /\b\d+\s*(adults?|kids?|children|people|persons?|guests?|pax|nights?|days?)\b/.test(clean);
+
+    return hasMonth || hasDate || hasRoute || hasPartyOrStay;
   }
 
   /**
