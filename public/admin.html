@@ -85,40 +85,55 @@
       border-color: var(--primary);
       color: var(--primary);
     }
-    .btn-all-mock {
-      background: rgba(254, 187, 2, 0.15);
-      border: 1px solid rgba(254, 187, 2, 0.45);
-      color: #b45309;
-      padding: 8px 16px;
+    .data-mode-switch {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 10px 5px 12px;
       border-radius: var(--radius-sm);
+      border: 1px solid rgba(254, 187, 2, 0.45);
+      background: rgba(254, 187, 2, 0.15);
+      box-shadow: var(--shadow-subtle);
+      transition: all 0.2s;
+    }
+    .data-mode-switch .data-mode-icon {
+      color: #b45309;
+      font-size: 13px;
+    }
+    [data-theme="dark"] .data-mode-switch .data-mode-icon {
+      color: #febb02;
+    }
+    .data-mode-switch select {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
       font-family: inherit;
       font-size: 13px;
       font-weight: 700;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.2s;
-      box-shadow: var(--shadow-subtle);
+      padding: 3px 2px;
     }
-    [data-theme="dark"] .btn-all-mock {
-      color: #febb02;
-    }
-    .btn-all-mock:hover {
-      filter: brightness(1.05);
-      transform: translateY(-1px);
-    }
-    .btn-all-mock.active {
-      background: rgba(0, 128, 9, 0.12);
+    .data-mode-switch.live-mode {
       border-color: rgba(0, 128, 9, 0.35);
-      color: #008009;
-      cursor: default;
-      transform: none;
+      background: rgba(0, 128, 9, 0.12);
     }
-    [data-theme="dark"] .btn-all-mock.active {
-      background: rgba(36, 168, 91, 0.15);
+    .data-mode-switch.live-mode .data-mode-icon {
+      color: #008009;
+    }
+    [data-theme="dark"] .data-mode-switch.live-mode {
       border-color: rgba(36, 168, 91, 0.35);
+      background: rgba(36, 168, 91, 0.15);
+    }
+    [data-theme="dark"] .data-mode-switch.live-mode .data-mode-icon {
       color: #24a85b;
+    }
+    .data-mode-switch.custom-mode {
+      border-color: var(--border-color);
+      background: var(--bg-card-subtle);
+    }
+    .data-mode-switch.custom-mode .data-mode-icon {
+      color: var(--text-muted);
     }
     .admin-grid {
       display: grid;
@@ -326,6 +341,15 @@
       color: #24a85b;
       border-color: rgba(36, 168, 91, 0.3);
     }
+    .alert-banner.warning {
+      background: rgba(254, 187, 2, 0.15);
+      color: #b45309;
+      border: 1px solid rgba(254, 187, 2, 0.4);
+      display: block;
+    }
+    [data-theme="dark"] .alert-banner.warning {
+      color: #febb02;
+    }
   </style>
 </head>
 <body>
@@ -336,9 +360,14 @@
         <p>Configure live API credentials, select AI engine models, and test service connectivity.</p>
       </div>
       <div class="admin-nav-actions">
-        <button type="button" class="btn-all-mock" id="btnAllMock" onclick="enableAllMockData()" title="Switch every provider to mock data so the whole flow runs without API keys">
-          <i class="fa-solid fa-flask"></i> <span id="allMockLabel">Go All Mock Data</span>
-        </button>
+        <div class="data-mode-switch" id="dataModeSwitch" title="Switch every provider between mock data and live API data in one action">
+          <i class="fa-solid fa-flask data-mode-icon" id="dataModeIcon"></i>
+          <select id="dataModeSelect" onchange="applyDataMode(this.value)">
+            <option value="mock">All Mock Data</option>
+            <option value="live">All Actual Data (Live APIs)</option>
+            <option value="custom" disabled>Custom (mixed providers)</option>
+          </select>
+        </div>
         <!-- Theme Switcher Pill -->
         <div class="theme-switcher-pill" id="themeSwitcher" title="Switch Theme">
           <button type="button" class="theme-btn active" id="btnThemeLight" data-theme="light" title="Navy Blue & White (Light Theme)">
@@ -525,6 +554,8 @@
   </div>
 
   <script>
+    let latestConfig = {};
+
     async function loadConfig() {
       try {
         const res = await fetch("/api/admin/config");
@@ -539,6 +570,7 @@
         if (!data.success) return;
 
         const c = data.config;
+        latestConfig = c;
         document.getElementById("llmProvider").value = c.llmProvider || "gemini";
         document.getElementById("geminiModel").value = c.geminiModel || "gemini-2.5-flash";
         document.getElementById("geminiApiKey").value = c.geminiApiKey || "";
@@ -576,7 +608,7 @@
 
         updateBadge("cab", c.cabProvider === "mock" ? "mock" : "live", c.cabProvider === "mock" ? "Mock Ready" : "Fleet Active");
 
-        refreshAllMockButton();
+        refreshDataModeSwitch();
       } catch (err) {
         console.error("Failed to load admin config:", err);
       }
@@ -592,41 +624,83 @@
       badge.innerHTML = `<span class="status-dot" style="background: ${dotColor};"></span> ${text}`;
     }
 
-    const ALL_MOCK_PRESET = {
-      llmProvider: "rule_engine",
-      flightProvider: "mock",
-      hotelProvider: "mock",
-      paymentsProvider: "mock",
-      paymentsEnvironment: "sandbox",
-      cabProvider: "mock"
+    const DATA_MODE_PRESETS = {
+      mock: {
+        llmProvider: "rule_engine",
+        flightProvider: "mock",
+        hotelProvider: "mock",
+        paymentsProvider: "mock",
+        paymentsEnvironment: "sandbox",
+        cabProvider: "mock"
+      },
+      live: {
+        llmProvider: "gemini",
+        flightProvider: "amadeus",
+        hotelProvider: "booking_com",
+        paymentsProvider: "booking_com_payments",
+        cabProvider: "standard"
+      }
     };
 
-    function isAllMockActive() {
-      return Object.entries(ALL_MOCK_PRESET).every(([id, value]) => {
+    const LIVE_KEY_REQUIREMENTS = [
+      { flag: "hasGeminiKey", label: "Google Gemini API Key" },
+      { flag: "hasAmadeusKey", label: "Amadeus API Key" },
+      { flag: "hasAmadeusSecret", label: "Amadeus API Secret" },
+      { flag: "hasBookingKey", label: "Booking.com Demand API Key" },
+      { flag: "hasPaymentsKey", label: "Booking.com Payments API Key" }
+    ];
+
+    function matchesPreset(preset) {
+      return Object.entries(preset).every(([id, value]) => {
         const el = document.getElementById(id);
         return el && el.value === value;
       });
     }
 
-    function refreshAllMockButton() {
-      const btn = document.getElementById("btnAllMock");
-      const label = document.getElementById("allMockLabel");
-      if (!btn || !label) return;
-      const active = isAllMockActive();
-      btn.classList.toggle("active", active);
-      btn.innerHTML = active
-        ? '<i class="fa-solid fa-circle-check"></i> <span id="allMockLabel">All Mock Data Active</span>'
-        : '<i class="fa-solid fa-flask"></i> <span id="allMockLabel">Go All Mock Data</span>';
+    function currentDataMode() {
+      if (matchesPreset(DATA_MODE_PRESETS.mock)) return "mock";
+      if (matchesPreset(DATA_MODE_PRESETS.live)) return "live";
+      return "custom";
     }
 
-    async function enableAllMockData() {
-      Object.entries(ALL_MOCK_PRESET).forEach(([id, value]) => {
+    function refreshDataModeSwitch() {
+      const wrapper = document.getElementById("dataModeSwitch");
+      const select = document.getElementById("dataModeSelect");
+      const icon = document.getElementById("dataModeIcon");
+      if (!wrapper || !select || !icon) return;
+
+      const mode = currentDataMode();
+      select.value = mode;
+      wrapper.classList.toggle("live-mode", mode === "live");
+      wrapper.classList.toggle("custom-mode", mode === "custom");
+      icon.className = `fa-solid data-mode-icon ${mode === "live" ? "fa-tower-broadcast" : mode === "custom" ? "fa-sliders" : "fa-flask"}`;
+    }
+
+    function missingLiveKeys() {
+      return LIVE_KEY_REQUIREMENTS.filter((req) => !latestConfig[req.flag]).map((req) => req.label);
+    }
+
+    async function applyDataMode(mode) {
+      const preset = DATA_MODE_PRESETS[mode];
+      if (!preset) return;
+
+      Object.entries(preset).forEach(([id, value]) => {
         const el = document.getElementById(id);
         if (el) el.value = value;
       });
       toggleLlmFields();
-      refreshAllMockButton();
-      await saveAdminConfig("All providers switched to mock data. Flights, hotels, transfers, and payments now run key-free.");
+      refreshDataModeSwitch();
+
+      if (mode === "mock") {
+        await saveAdminConfig("All providers switched to mock data. Flights, hotels, transfers, and payments now run key-free.");
+        return;
+      }
+
+      const missing = missingLiveKeys();
+      await saveAdminConfig(
+        `All providers switched to live APIs (payments stay in ${document.getElementById("paymentsEnvironment").value.toUpperCase()}).`,
+        missing.length ? `Live mode is on, but these credentials are still missing: ${missing.join(", ")}. Add them below and save.` : null
+      );
     }
 
     function togglePasswordVisibility(fieldId) {
@@ -691,7 +765,7 @@
       }
     }
 
-    async function saveAdminConfig(successMessage) {
+    async function saveAdminConfig(successMessage, warningMessage) {
       const updates = {
         llmProvider: document.getElementById("llmProvider").value,
         geminiModel: document.getElementById("geminiModel").value,
@@ -728,9 +802,11 @@
 
         if (data.success) {
           const banner = document.getElementById("alertBanner");
-          banner.className = "alert-banner success";
-          banner.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${successMessage || "Configuration saved successfully! Runtime environment updated."}`;
-          setTimeout(() => { banner.style.display = "none"; }, 4000);
+          banner.className = warningMessage ? "alert-banner warning" : "alert-banner success";
+          banner.innerHTML = warningMessage
+            ? `<i class="fa-solid fa-triangle-exclamation"></i> ${warningMessage}`
+            : `<i class="fa-solid fa-circle-check"></i> ${successMessage || "Configuration saved successfully! Runtime environment updated."}`;
+          setTimeout(() => { banner.style.display = "none"; }, warningMessage ? 9000 : 4000);
           loadConfig();
         } else {
           alert("Failed to save configuration: " + (data.error || 'Server error'));
@@ -765,7 +841,7 @@
       loadConfig();
       ["llmProvider", "flightProvider", "hotelProvider", "paymentsProvider", "paymentsEnvironment", "cabProvider"].forEach((id) => {
         const el = document.getElementById(id);
-        if (el) el.addEventListener("change", refreshAllMockButton);
+        if (el) el.addEventListener("change", refreshDataModeSwitch);
       });
     });
   </script>
