@@ -85,6 +85,41 @@
       border-color: var(--primary);
       color: var(--primary);
     }
+    .btn-all-mock {
+      background: rgba(254, 187, 2, 0.15);
+      border: 1px solid rgba(254, 187, 2, 0.45);
+      color: #b45309;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      box-shadow: var(--shadow-subtle);
+    }
+    [data-theme="dark"] .btn-all-mock {
+      color: #febb02;
+    }
+    .btn-all-mock:hover {
+      filter: brightness(1.05);
+      transform: translateY(-1px);
+    }
+    .btn-all-mock.active {
+      background: rgba(0, 128, 9, 0.12);
+      border-color: rgba(0, 128, 9, 0.35);
+      color: #008009;
+      cursor: default;
+      transform: none;
+    }
+    [data-theme="dark"] .btn-all-mock.active {
+      background: rgba(36, 168, 91, 0.15);
+      border-color: rgba(36, 168, 91, 0.35);
+      color: #24a85b;
+    }
     .admin-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -301,6 +336,9 @@
         <p>Configure live API credentials, select AI engine models, and test service connectivity.</p>
       </div>
       <div class="admin-nav-actions">
+        <button type="button" class="btn-all-mock" id="btnAllMock" onclick="enableAllMockData()" title="Switch every provider to mock data so the whole flow runs without API keys">
+          <i class="fa-solid fa-flask"></i> <span id="allMockLabel">Go All Mock Data</span>
+        </button>
         <!-- Theme Switcher Pill -->
         <div class="theme-switcher-pill" id="themeSwitcher" title="Switch Theme">
           <button type="button" class="theme-btn active" id="btnThemeLight" data-theme="light" title="Navy Blue & White (Light Theme)">
@@ -537,6 +575,8 @@
         updateBadge("booking_com_payments", payStatus, payText);
 
         updateBadge("cab", c.cabProvider === "mock" ? "mock" : "live", c.cabProvider === "mock" ? "Mock Ready" : "Fleet Active");
+
+        refreshAllMockButton();
       } catch (err) {
         console.error("Failed to load admin config:", err);
       }
@@ -550,6 +590,43 @@
       if (statusType === 'mock') dotColor = '#F59E0B';
       if (statusType === 'error') dotColor = '#EF4444';
       badge.innerHTML = `<span class="status-dot" style="background: ${dotColor};"></span> ${text}`;
+    }
+
+    const ALL_MOCK_PRESET = {
+      llmProvider: "rule_engine",
+      flightProvider: "mock",
+      hotelProvider: "mock",
+      paymentsProvider: "mock",
+      paymentsEnvironment: "sandbox",
+      cabProvider: "mock"
+    };
+
+    function isAllMockActive() {
+      return Object.entries(ALL_MOCK_PRESET).every(([id, value]) => {
+        const el = document.getElementById(id);
+        return el && el.value === value;
+      });
+    }
+
+    function refreshAllMockButton() {
+      const btn = document.getElementById("btnAllMock");
+      const label = document.getElementById("allMockLabel");
+      if (!btn || !label) return;
+      const active = isAllMockActive();
+      btn.classList.toggle("active", active);
+      btn.innerHTML = active
+        ? '<i class="fa-solid fa-circle-check"></i> <span id="allMockLabel">All Mock Data Active</span>'
+        : '<i class="fa-solid fa-flask"></i> <span id="allMockLabel">Go All Mock Data</span>';
+    }
+
+    async function enableAllMockData() {
+      Object.entries(ALL_MOCK_PRESET).forEach(([id, value]) => {
+        const el = document.getElementById(id);
+        if (el) el.value = value;
+      });
+      toggleLlmFields();
+      refreshAllMockButton();
+      await saveAdminConfig("All providers switched to mock data. Flights, hotels, transfers, and payments now run key-free.");
     }
 
     function togglePasswordVisibility(fieldId) {
@@ -614,7 +691,7 @@
       }
     }
 
-    async function saveAdminConfig() {
+    async function saveAdminConfig(successMessage) {
       const updates = {
         llmProvider: document.getElementById("llmProvider").value,
         geminiModel: document.getElementById("geminiModel").value,
@@ -652,7 +729,7 @@
         if (data.success) {
           const banner = document.getElementById("alertBanner");
           banner.className = "alert-banner success";
-          banner.innerHTML = `<i class="fa-solid fa-circle-check"></i> Configuration saved successfully! Runtime environment updated.`;
+          banner.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${successMessage || "Configuration saved successfully! Runtime environment updated."}`;
           setTimeout(() => { banner.style.display = "none"; }, 4000);
           loadConfig();
         } else {
@@ -686,6 +763,10 @@
     window.addEventListener("DOMContentLoaded", () => {
       initAdminTheme();
       loadConfig();
+      ["llmProvider", "flightProvider", "hotelProvider", "paymentsProvider", "paymentsEnvironment", "cabProvider"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener("change", refreshAllMockButton);
+      });
     });
   </script>
 </body>
