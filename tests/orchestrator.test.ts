@@ -44,6 +44,12 @@ async function runTestSuite() {
   delete process.env.BOOKING_COM_API_KEY;
   delete process.env.BOOKING_COM_PAYMENTS_API_KEY;
 
+  adminConfigService.saveConfig({
+    flightProvider: 'amadeus',
+    hotelProvider: 'booking_com',
+    paymentsProvider: 'booking_com_payments'
+  });
+
   // --- 1. Mock Framework Removal & Strict Provider Guards ---
   console.log('1️⃣ Phase 1: Mock Framework Removal & Strict Provider API Key Guards');
   assert(amadeusFlightProvider.hasApiKey() === false, 'Amadeus provider flags missing API key');
@@ -131,6 +137,22 @@ async function runTestSuite() {
 
   const ragAnswer = travelRAGService.answerTravelInquiry(allowedQuery);
   assert(ragAnswer !== null && ragAnswer.includes('baggage'), 'RAG knowledge base answered baggage query with domain guidelines');
+
+  // Verify missing Gemini key notification on user questions
+  const origGeminiKey = process.env.GEMINI_API_KEY;
+  delete process.env.GEMINI_API_KEY;
+
+  const missingKeyQuestion = await travelOrchestrator.processMessage(undefined, 'Can you recommend places to visit in Paris?');
+  assert(missingKeyQuestion.cards?.type === 'error', 'Chatbot responds with error card when question asked without Gemini key');
+  assert(missingKeyQuestion.cards?.data?.missingKey === 'GEMINI_API_KEY', 'Error card highlights missing GEMINI_API_KEY');
+  assert(missingKeyQuestion.cards?.data?.actionUrl === '/admin.html', 'Error card directs user to /admin.html');
+  assert(missingKeyQuestion.reply.includes('Admin Panel') || missingKeyQuestion.reply.includes('administrator'), 'Reply explicitly instructs adding key to Admin Panel / contacting admin');
+
+  const advisoryQuestion = await travelOrchestrator.processMessage(undefined, allowedQuery);
+  assert(advisoryQuestion.cards?.type === 'error', 'Error card attached to advisory inquiry when Gemini key missing');
+  assert(advisoryQuestion.reply.includes('baggage'), 'Travel advisory information included alongside missing key instruction');
+
+  if (origGeminiKey) process.env.GEMINI_API_KEY = origGeminiKey;
 
   // --- 6. Admin Dashboard & Connection Diagnostics ---
   console.log('\n6️⃣ Phase 6: Admin Dashboard & Connection Diagnostics');

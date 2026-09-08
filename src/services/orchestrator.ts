@@ -94,19 +94,12 @@ export class TravelOrchestrator {
       };
     }
 
-    // Knowledge Inquiry: check if user is asking general travel advisory questions
-    if (cleanInput.includes('baggage') || cleanInput.includes('luggage') || cleanInput.includes('visa') || 
-        cleanInput.includes('passport') || cleanInput.includes('check-in time') || cleanInput.includes('etias') ||
-        cleanInput.includes('schengen') || cleanInput.includes('tourist tax')) {
-      const advisory = travelRAGService.answerTravelInquiry(cleanInput);
-      if (advisory) {
-        await this.saveBotMessage(session.id, advisory);
-        return {
-          sessionId: session.id,
-          reply: advisory,
-          step: session.currentStep
-        };
-      }
+    // Question & Travel Inquiry Handler:
+    // When any question or advisory inquiry is asked:
+    // - If Gemini API key is missing: instruct them to add it to the API section in Admin Panel / contact admin
+    // - If Gemini API key is provided: answer intelligently using Gemini model
+    if (this.isQuestionOrInquiry(cleanInput)) {
+      return this.handleQuestionInquiry(session, cleanInput);
     }
 
     // Main conversational state machine
@@ -269,6 +262,109 @@ export class TravelOrchestrator {
       if (gRes && gRes !== defaultReply) return gRes;
     }
     return defaultReply;
+  }
+
+  /**
+   * Determine if the user message is asking a question or travel inquiry rather than a direct trip booking command
+   */
+  private isQuestionOrInquiry(input: string): boolean {
+    const clean = (input || '').trim().toLowerCase();
+    if (clean.length === 0) return false;
+
+    // Direct question mark
+    const hasQuestionMark = clean.includes('?');
+
+    // Common question starters
+    const questionStarters = [
+      'what', 'why', 'how', 'when', 'where', 'who', 'which',
+      'can you', 'could you', 'would you', 'tell me', 'explain',
+      'is it', 'is there', 'are there', 'do you', 'do i', 'does ',
+      'should i', 'recommend', 'suggest', 'help me with', 'help me understand',
+      'what is', 'what are', 'how do', 'how can', 'how much'
+    ];
+
+    const startsWithQuestion = questionStarters.some(starter => 
+      clean === starter || clean.startsWith(starter + ' ') || clean.startsWith(starter + "'")
+    );
+
+    // Specific travel advisory topics
+    const advisoryTopics = [
+      'baggage', 'luggage', 'visa', 'passport', 'check-in', 'etias',
+      'schengen', 'tourist tax', 'refund', 'cancellation', 'policy', 'weather'
+    ];
+    const mentionsAdvisoryTopic = advisoryTopics.some(topic => clean.includes(topic));
+
+    if (!hasQuestionMark && !startsWithQuestion && !mentionsAdvisoryTopic) {
+      return false;
+    }
+
+    // Disambiguate booking commands like "Can you book a flight from New York to Paris"
+    const hasBookingVerb = clean.includes('book') || clean.includes('fly to') || clean.includes('trip to') || clean.includes('tickets to');
+    const knownDestinations = ['paris', 'london', 'tokyo', 'rome', 'dubai', 'bali', 'singapore', 'new york', 'nyc'];
+    const hasDestination = knownDestinations.some(d => clean.includes(d));
+    const hasOrigin = clean.includes('from ');
+
+    if (hasBookingVerb && (hasDestination || hasOrigin)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Handle user questions and inquiries:
+   * If Gemini API key is missing, instructs the user to add it in the Admin Panel / contact admin.
+   * If Gemini API key is configured, answers via Gemini AI model.
+   */
+  private async handleQuestionInquiry(session: any, input: string): Promise<ChatResponse> {
+    const isGeminiAvailable = geminiService.isEnabled();
+
+    if (!isGeminiAvailable) {
+      const ragAdvisory = travelRAGService.answerTravelInquiry(input);
+      let reply = `⚠️ **Google Gemini API Key Not Configured**\n\nTo answer custom questions and provide dynamic AI travel assistance with Google Gemini, please add your **GEMINI_API_KEY** in the **API section** of the **[Admin Panel](/admin.html)**, or contact your system administrator.`;
+
+      if (ragAdvisory) {
+        reply += `\n\n---\n\n${ragAdvisory}`;
+      } else {
+        reply += `\n\n👉 *In the meantime, you can search flights, book hotels, and reserve cabs anytime — simply tell me where and when you'd like to travel!*`;
+      }
+
+      const errorCard = {
+        type: 'error' as const,
+        data: {
+          title: 'Gemini AI API Key Required',
+          provider: 'Google Gemini 2.5 Flash',
+          message: 'To answer custom questions and provide AI conversational intelligence, please add your Gemini API Key in the API section of the Admin Panel or contact the administrator.',
+          missingKey: 'GEMINI_API_KEY',
+          actionLabel: 'Open Admin Panel API Section',
+          actionUrl: '/admin.html'
+        }
+      };
+
+      await this.saveBotMessage(session.id, reply, errorCard);
+      return {
+        sessionId: session.id,
+        reply,
+        step: session.currentStep,
+        cards: errorCard
+      };
+    }
+
+    // Gemini API key IS available: answer using the Gemini model
+    const ragContext = travelRAGService.retrieve(input, 2);
+    const aiResponse = await geminiService.answerUserQuestion(input, {
+      currentStep: session.currentStep,
+      destination: session.destination,
+      ragContext
+    });
+
+    await this.saveBotMessage(session.id, aiResponse.reply, aiResponse.errorCard);
+    return {
+      sessionId: session.id,
+      reply: aiResponse.reply,
+      step: session.currentStep,
+      cards: aiResponse.errorCard
+    };
   }
 
   /**

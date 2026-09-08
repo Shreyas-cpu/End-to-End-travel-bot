@@ -73,7 +73,7 @@ app.get('/api/health', (req: Request, res: Response) => {
       llm: {
         provider: cfg.llmProvider,
         configured: cfg.llmProvider === 'rule_engine' || hasGemini,
-        status: cfg.llmProvider === 'rule_engine' ? 'Deterministic Rule Engine Active' : (hasGemini ? 'Google Gemini 2.5 Flash Connected & Active' : 'Error: No API Key Inserted')
+        status: cfg.llmProvider === 'rule_engine' ? 'Deterministic Rule Engine Active' : (hasGemini ? 'Google Gemini 2.5 Flash Connected & Active' : 'Error: No API Key Inserted (Add in Admin Panel API section or contact admin)')
       }
     }
   });

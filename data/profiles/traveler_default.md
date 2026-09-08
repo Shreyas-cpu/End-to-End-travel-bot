@@ -18,14 +18,16 @@
 ## Booking History
 | Date | Reference | Destination | Flight & Cabin | Hotel | Total USD |
 |---|---|---|---|---|---|
-| 2026-09-08 | `TRV-480906` | Tokyo | British Airways (BA 178) (Economy) | Tokyo Airport Transit Plaza Hotel | $896.00 |
-| 2026-09-08 | `TRV-654596` | New York | Air France (AF AF007) (Business) (N/A) | Paris Luxury Palace Hotel | $3249.12 |
-| 2026-09-08 | `TRV-687581` | Paris | Air France (AF AF007) (Business) (N/A) (N/A) | Paris Luxury Palace Hotel | $3249.12 |
-| 2026-09-08 | `TRV-894828` | New York | Air France (AF AF007) (Business) (N/A) (N/A) (N/A) | Paris Luxury Palace Hotel | $3249.12 |
-| 2026-09-08 | `TRV-366792` | New York | Air France (AF AF007) (Business) (N/A) (N/A) (N/A) (N/A) | Paris Luxury Palace Hotel | $3249.12 |
-| 2026-09-08 | `TRV-533419` | Rome | British Airways (BA 178) (Premium Economy) (N/A) (N/A) (N/A) (N/A) (N/A) | Rome Airport Transit Plaza Hotel | $985.60 |
-| 2026-09-04 | `TRV-312947` | Paris | Air France (AF 007) (Economy) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) | Ibis Paris CDG Airport Hub | $1024.80 |
-| 2026-09-04 | `TRV-664797` | Rome | British Airways (BA 178) (Premium Economy) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) | Rome Airport Transit Plaza Hotel | $985.60 |
-| 2026-09-04 | `TRV-657978` | Rome | British Airways (BA 178) (Premium Economy) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) | Rome Airport Transit Plaza Hotel | $985.60 |
-| 2026-09-04 | `TRV-592321` | Rome | British Airways (BA 178) (Premium Economy) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) | Rome Airport Transit Plaza Hotel | $985.60 |
-| 2026-09-04 | `TRV-674638` | London | British Airways (BA 178) (Business) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) | Premier Inn London Heathrow Airport T4 | $1766.24 |
+| 2026-09-08 | `TRV-310128` | Tokyo | British Airways (BA 178) (Economy) | Tokyo Airport Transit Plaza Hotel | $896.00 |
+| 2026-09-08 | `TRV-611137` | New York | Air France (AF AF007) (Business) (N/A) | Paris Luxury Palace Hotel | $3249.12 |
+| 2026-09-08 | `TRV-480906` | Tokyo | British Airways (BA 178) (Economy) (N/A) (N/A) | Tokyo Airport Transit Plaza Hotel | $896.00 |
+| 2026-09-08 | `TRV-654596` | New York | Air France (AF AF007) (Business) (N/A) (N/A) (N/A) | Paris Luxury Palace Hotel | $3249.12 |
+| 2026-09-08 | `TRV-687581` | Paris | Air France (AF AF007) (Business) (N/A) (N/A) (N/A) (N/A) | Paris Luxury Palace Hotel | $3249.12 |
+| 2026-09-08 | `TRV-894828` | New York | Air France (AF AF007) (Business) (N/A) (N/A) (N/A) (N/A) (N/A) | Paris Luxury Palace Hotel | $3249.12 |
+| 2026-09-08 | `TRV-366792` | New York | Air France (AF AF007) (Business) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) | Paris Luxury Palace Hotel | $3249.12 |
+| 2026-09-08 | `TRV-533419` | Rome | British Airways (BA 178) (Premium Economy) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) | Rome Airport Transit Plaza Hotel | $985.60 |
+| 2026-09-04 | `TRV-312947` | Paris | Air France (AF 007) (Economy) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) | Ibis Paris CDG Airport Hub | $1024.80 |
+| 2026-09-04 | `TRV-664797` | Rome | British Airways (BA 178) (Premium Economy) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) | Rome Airport Transit Plaza Hotel | $985.60 |
+| 2026-09-04 | `TRV-657978` | Rome | British Airways (BA 178) (Premium Economy) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) | Rome Airport Transit Plaza Hotel | $985.60 |
+| 2026-09-04 | `TRV-592321` | Rome | British Airways (BA 178) (Premium Economy) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) | Rome Airport Transit Plaza Hotel | $985.60 |
+| 2026-09-04 | `TRV-674638` | London | British Airways (BA 178) (Business) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) | Premier Inn London Heathrow Airport T4 | $1766.24 |

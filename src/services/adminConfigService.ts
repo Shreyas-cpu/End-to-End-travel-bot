@@ -173,7 +173,7 @@ export class AdminConfigService {
           provider: "Google Gemini 2.5 Flash",
           success: false,
           status: "Error: No API Key Inserted",
-          message: "No Gemini API Key found. Please enter a valid GEMINI_API_KEY in the field above.",
+          message: "No Gemini API Key found. Please add your GEMINI_API_KEY in the API section of the Admin Panel, or contact your system administrator.",
           latencyMs: Date.now() - start
         };
       }
