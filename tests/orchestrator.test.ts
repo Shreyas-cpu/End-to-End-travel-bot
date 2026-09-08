@@ -317,6 +317,100 @@ async function runTestSuite() {
     if (fs.existsSync(mdProfilePath)) fs.unlinkSync(mdProfilePath);
   } catch(e) {}
 
+  // --- 8. Phase 8: Mock Testing Mode (Zero API Keys Dual-Mode) ---
+  console.log('\n8️⃣ Phase 8: Mock Testing Mode (Dual-Mode Verification with Zero API Keys)');
+  
+  // Set all providers to mock mode and ensure no API keys exist
+  delete process.env.AMADEUS_API_KEY;
+  delete process.env.AMADEUS_API_SECRET;
+  delete process.env.BOOKING_COM_API_KEY;
+  delete process.env.BOOKING_COM_PAYMENTS_API_KEY;
+
+  adminConfigService.saveConfig({
+    flightProvider: 'mock',
+    hotelProvider: 'mock',
+    paymentsProvider: 'mock',
+    cabProvider: 'mock'
+  });
+
+  assert(amadeusFlightProvider.isMock() === true, 'Amadeus provider is in mock mode');
+  assert(bookingComProvider.isMock() === true, 'Booking.com provider is in mock mode');
+  assert(bookingComPaymentProvider.isMock() === true, 'Booking.com payments provider is in mock mode');
+
+  const mockFlightOffers = await amadeusFlightProvider.searchFlights({
+    origin: 'New York (JFK)',
+    destination: 'Tokyo (NRT)',
+    preferredCabin: 'Business'
+  });
+  assert(mockFlightOffers.length === 4, 'Mock flights return 4 scheduled flights across all times of day');
+  assert(mockFlightOffers[0].cabinTiers['First Class'] !== undefined, 'Mock flights contain all 4 cabin tiers');
+
+  const mockHotelOffers = await bookingComProvider.searchAccommodations({
+    destination: 'Tokyo'
+  });
+  assert(mockHotelOffers.length >= 6, 'Mock hotels return 6+ rich accommodations');
+  assert(mockHotelOffers[0].images.length >= 3, 'Mock hotels include multiple carousel photos');
+  assert(mockHotelOffers[0].area === 'Near Airport', 'Mock hotels default to Near Airport area');
+
+  const mockPaySession = await bookingComPaymentProvider.createPaymentSession({
+    bookingReference: 'TRV-MOCK-99',
+    totalCost: 1250.00
+  });
+  assert(mockPaySession.sessionId.startsWith('bkg_pay_mock_'), 'Mock payment session generated with mock prefix');
+
+  const mockPayVerify = await bookingComPaymentProvider.verifyPayment(mockPaySession.sessionId);
+  assert(mockPayVerify.success === true, 'Mock payment verification succeeds instantly');
+
+  const mockPingFlt = await adminConfigService.testConnection('amadeus');
+  assert(mockPingFlt.success === true && mockPingFlt.status.includes('Mock Testing Mode'), 'Mock Amadeus connection test succeeds in 2ms');
+
+  const mockPingHtl = await adminConfigService.testConnection('booking_com');
+  assert(mockPingHtl.success === true && mockPingHtl.status.includes('Mock Testing Mode'), 'Mock Booking.com connection test succeeds in 2ms');
+
+  const mockPingPay = await adminConfigService.testConnection('booking_com_payments');
+  assert(mockPingPay.success === true && mockPingPay.status.includes('Mock Testing Mode'), 'Mock Booking.com Payments connection test succeeds in 2ms');
+
+  // Full end-to-end conversation in mock mode without any API keys
+  const mockChat1 = await travelOrchestrator.processMessage(undefined, 'I want to travel to Tokyo from New York');
+  assert(mockChat1.step === 'FLIGHT_SELECTION', 'Mock conversational pipeline proceeds to FLIGHT_SELECTION without key error');
+  assert(mockChat1.cards?.type === 'flights', 'Mock flight cards returned to user');
+  const mSid = mockChat1.sessionId;
+
+  const mockChat2 = await travelOrchestrator.processMessage(mSid, 'Select Flight', {
+    action: 'SELECT_FLIGHT',
+    item: mockChat1.cards?.data[0],
+    cabinClass: 'Economy',
+    price: mockChat1.cards?.data[0].cabinTiers['Economy']
+  });
+  assert(mockChat2.step === 'HOTEL_SELECTION', 'Mock conversational pipeline proceeds to HOTEL_SELECTION without key error');
+  assert(mockChat2.cards?.type === 'hotels', 'Mock hotel cards returned to user');
+
+  const mockChat3 = await travelOrchestrator.processMessage(mSid, 'Select Hotel', {
+    action: 'SELECT_HOTEL',
+    item: mockChat2.cards?.data[0]
+  });
+  assert(mockChat3.step === 'CAB_SELECTION', 'Mock conversational pipeline proceeds to CAB_SELECTION');
+
+  const mockChat4 = await travelOrchestrator.processMessage(mSid, 'Select Cab', {
+    action: 'SELECT_CAB',
+    item: mockChat3.cards?.data[0]
+  });
+  assert(mockChat4.step === 'CHECKOUT_SUMMARY', 'Mock conversational pipeline proceeds to CHECKOUT_SUMMARY without key error');
+
+  const mockChat5 = await travelOrchestrator.processMessage(mSid, 'Confirm Booking', {
+    action: 'CONFIRM_BOOKING',
+    paymentMethod: 'Credit Card (Visa)'
+  });
+  assert(mockChat5.step === 'CONFIRMED', 'Mock booking successfully confirmed without external payment keys');
+  const mockRef = mockChat5.cards?.data?.bookingReference;
+  const mockPdfFilePath = path.join(process.cwd(), 'public', 'tickets', `Ticket_${mockRef}.pdf`);
+  assert(fs.existsSync(mockPdfFilePath), 'Mock booking ticket generated as official PDF voucher');
+
+  // Clean up mock ticket
+  try {
+    if (fs.existsSync(mockPdfFilePath)) fs.unlinkSync(mockPdfFilePath);
+  } catch(e) {}
+
   console.log('\n================================================================');
   console.log(`🎉 SUITE COMPLETE: ${passedTests}/${totalTests} TESTS PASSED (100%)`);
   console.log('================================================================');
