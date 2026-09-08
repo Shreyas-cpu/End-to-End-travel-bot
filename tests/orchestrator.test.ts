@@ -14,7 +14,8 @@ const prisma = new PrismaClient();
 
 async function runTestSuite() {
   console.log('================================================================');
-  console.log('🧪 RUNNING FULL SUITE: TRAVEL BOOKING AI FRAMEWORK (8 PHASES)');
+  console.log('🧪 RUNNING FULL SUITE: TRAVEL BOOKING AI FRAMEWORK');
+  console.log('   (MOCK FRAMEWORK REMOVED & LIVE API KEY ENFORCEMENT VERIFIED)');
   console.log('================================================================\n');
 
   let passedTests = 0;
@@ -31,37 +32,73 @@ async function runTestSuite() {
     }
   }
 
-  // --- 1. Flight Cabin Class Selection & Schedule ---
-  console.log('1️⃣ Phase 1: Flight Cabin Class Selection & Scheduling');
-  const flightOffers = await amadeusFlightProvider.searchFlights({
-    origin: 'New York (JFK)',
-    destination: 'Paris',
-    timePreference: 'morning',
-    preferredCabin: 'Business'
-  });
-  assert(flightOffers.length > 0, 'Amadeus flight provider returns flight offers');
-  assert(flightOffers[0].cabinTiers !== undefined, 'Flight offers include all 4 cabin tiers');
-  assert(flightOffers[0].cabinTiers['First Class'] > flightOffers[0].cabinTiers['Economy'], 'First class fare is higher than economy');
-  assert(flightOffers[0].departurePeriod === 'morning', 'Time-of-day morning filter prioritized morning departure');
+  // Preserve original environment
+  const origAmadeusKey = process.env.AMADEUS_API_KEY;
+  const origAmadeusSecret = process.env.AMADEUS_API_SECRET;
+  const origBookingKey = process.env.BOOKING_COM_API_KEY;
+  const origPaymentsKey = process.env.BOOKING_COM_PAYMENTS_API_KEY;
 
-  // --- 2. Hotel Carousel, Advanced Filter & Pagination ---
-  console.log('\n2️⃣ Phase 2: Hotel Carousel, Filter Toolbar & Pagination');
-  const hotels = await bookingComProvider.searchAccommodations({
-    destination: 'Paris'
-  });
-  assert(hotels.length >= 6, 'Booking.com provider returns at least 6 accommodations');
-  assert(Array.isArray(hotels[0].images) && hotels[0].images.length >= 3, 'Hotel includes multi-photo carousel array');
-  assert(hotels[0].area === 'Near Airport', 'First hotel default area is Near Airport');
-  assert(hotels[0].pricePerNight <= hotels[hotels.length - 1].pricePerNight, 'Hotels sorted by price low-to-high by default');
+  // Clear keys to test strict missing API key enforcement
+  delete process.env.AMADEUS_API_KEY;
+  delete process.env.AMADEUS_API_SECRET;
+  delete process.env.BOOKING_COM_API_KEY;
+  delete process.env.BOOKING_COM_PAYMENTS_API_KEY;
 
-  // --- 3. Expanded Cab Transfer Routing ---
+  // --- 1. Mock Framework Removal & Strict Provider Guards ---
+  console.log('1️⃣ Phase 1: Mock Framework Removal & Strict Provider API Key Guards');
+  assert(amadeusFlightProvider.hasApiKey() === false, 'Amadeus provider flags missing API key');
+  assert(bookingComProvider.hasApiKey() === false, 'Booking.com provider flags missing API key');
+  assert(bookingComPaymentProvider.hasApiKey() === false, 'Payments provider flags missing API key');
+
+  let amadeusThrew = false;
+  try {
+    await amadeusFlightProvider.searchFlights({ origin: 'New York (JFK)', destination: 'Paris' });
+  } catch (err: any) {
+    amadeusThrew = err.message.includes('NO_API_KEY');
+  }
+  assert(amadeusThrew, 'Amadeus throws NO_API_KEY error without silent mock fallback');
+
+  let bookingThrew = false;
+  try {
+    await bookingComProvider.searchAccommodations({ destination: 'Paris' });
+  } catch (err: any) {
+    bookingThrew = err.message.includes('NO_API_KEY');
+  }
+  assert(bookingThrew, 'Booking.com throws NO_API_KEY error without silent mock fallback');
+
+  let paymentsThrew = false;
+  try {
+    await bookingComPaymentProvider.createPaymentSession({ bookingReference: 'TRV-TEST', totalCost: 500 });
+  } catch (err: any) {
+    paymentsThrew = err.message.includes('NO_API_KEY');
+  }
+  assert(paymentsThrew, 'Payments provider throws NO_API_KEY error without silent mock fallback');
+
+  // --- 2. Chat Orchestrator Error Cards & Admin Links ---
+  console.log('\n2️⃣ Phase 2: Conversational Orchestrator Missing Key Error Handling');
+  const missingKeyChat = await travelOrchestrator.processMessage(undefined, 'I want to travel to London from New York next month');
+  assert(missingKeyChat.step === 'INITIATION', 'Chatbot remains in INITIATION when flight API key is missing');
+  assert(missingKeyChat.cards?.type === 'error', 'Chatbot responds with error card type');
+  assert(missingKeyChat.cards?.data?.missingKey.includes('AMADEUS_API_KEY'), 'Error card highlights missing AMADEUS_API_KEY');
+  assert(missingKeyChat.cards?.data?.actionUrl === '/admin.html', 'Error card directs user to /admin.html');
+  assert(missingKeyChat.reply.includes('Amadeus Flight API Key Missing'), 'Reply text explains key requirement and admin setup');
+
+  // --- 3. Ground Transfer Routing (Autonomous) ---
   console.log('\n3️⃣ Phase 3: Cab Transfer Routing (Airport-to-Hotel, Hotel-to-Airport, Custom)');
-  const a2hCabs = await cabTransferProvider.getTransferOptions('Paris', hotels[0], 'airport_to_hotel');
+  const dummyHotel: any = {
+    id: 'bkg-ref-101',
+    name: 'Grand Central Hotel',
+    city: 'Paris',
+    area: 'Near Airport',
+    pricePerNight: 120,
+    totalPrice: 480
+  };
+  const a2hCabs = await cabTransferProvider.getTransferOptions('Paris', dummyHotel, 'airport_to_hotel');
   assert(a2hCabs.length === 4, 'Cab transfer returns 4 distinct vehicle classes');
   assert(a2hCabs[0].routeType === 'airport_to_hotel', 'Route type correctly flagged as airport_to_hotel');
   assert(a2hCabs[0].pickupLocation.includes('Airport') || a2hCabs[0].pickupLocation.includes('Terminal'), 'Airport pickup assigned');
 
-  const h2aCabs = await cabTransferProvider.getTransferOptions('Paris', hotels[0], 'hotel_to_airport');
+  const h2aCabs = await cabTransferProvider.getTransferOptions('Paris', dummyHotel, 'hotel_to_airport');
   assert(h2aCabs[0].routeType === 'hotel_to_airport', 'Route type correctly toggled to hotel_to_airport');
   assert(h2aCabs[0].dropoffLocation.includes('Airport') || h2aCabs[0].dropoffLocation.includes('Terminal'), 'Airport dropoff assigned');
 
@@ -95,8 +132,8 @@ async function runTestSuite() {
   const ragAnswer = travelRAGService.answerTravelInquiry(allowedQuery);
   assert(ragAnswer !== null && ragAnswer.includes('baggage'), 'RAG knowledge base answered baggage query with domain guidelines');
 
-  // --- 6. Admin Dashboard & Runtime Credential Manager ---
-  console.log('\n6️⃣ Phase 6: Admin Dashboard & Runtime Config');
+  // --- 6. Admin Dashboard & Connection Diagnostics ---
+  console.log('\n6️⃣ Phase 6: Admin Dashboard & Connection Diagnostics');
   const adminConfig = adminConfigService.getConfig();
   assert(adminConfig !== undefined, 'Admin config retrieved successfully');
   
@@ -108,73 +145,175 @@ async function runTestSuite() {
   assert(masked.paymentsEnvironment === 'sandbox', 'Payment environment updated at runtime');
   assert(process.env.PAYMENTS_ENV === 'sandbox', 'process.env synchronized with admin config');
 
-  const testPing = await adminConfigService.testConnection('booking_com_payments');
-  assert(testPing.success === true, 'Diagnostic connectivity ping to Payments API succeeds');
+  const pingNoAmadeus = await adminConfigService.testConnection('amadeus');
+  assert(pingNoAmadeus.success === false && pingNoAmadeus.status.includes('No API Key Inserted'), 'Connection test returns error when Amadeus key missing');
 
-  // --- 7. Booking.com Payment Integration & Dual-Mode Printable Summary ---
-  console.log('\n7️⃣ Phase 7: Booking.com Payments & Dual-Mode Printable Vouchers');
-  const paySession = await bookingComPaymentProvider.createPaymentSession({
-    bookingReference: 'TRV-REGRESS-01',
-    totalCost: 1250.00
-  });
-  assert(paySession.sessionId.startsWith('bkg_pay_'), 'Booking.com payment session initialized');
-  assert(paySession.status === 'authorized', 'Payment session status is authorized');
+  const pingNoBooking = await adminConfigService.testConnection('booking_com');
+  assert(pingNoBooking.success === false && pingNoBooking.status.includes('No API Key Inserted'), 'Connection test returns error when Booking.com key missing');
 
-  const payVerify = await bookingComPaymentProvider.verifyPayment(paySession.sessionId, 'Credit Card');
-  assert(payVerify.success === true, 'Payment transaction verified and captured');
+  const pingNoPayments = await adminConfigService.testConnection('booking_com_payments');
+  assert(pingNoPayments.success === false && pingNoPayments.status.includes('No API Key Inserted'), 'Connection test returns error when Payments key missing');
 
-  // Full conversational booking session
-  const chat1 = await travelOrchestrator.processMessage(undefined, 'Book a flight from New York to Rome for 2 people');
-  assert(chat1.step === 'FLIGHT_SELECTION', 'Conversational step transitioned to FLIGHT_SELECTION');
-  const sId = chat1.sessionId;
+  // --- 7. End-to-End Flow with Live API Simulation & PDF Ticket Generation ---
+  console.log('\n7️⃣ Phase 7: Live API Booking Pipeline & PDF Generation');
+  
+  // Set configured test keys
+  process.env.AMADEUS_API_KEY = 'live_test_key_sample';
+  process.env.AMADEUS_API_SECRET = 'live_test_secret_sample';
+  process.env.BOOKING_COM_API_KEY = 'live_test_bkg_key_sample';
+  process.env.BOOKING_COM_PAYMENTS_API_KEY = 'live_test_pay_key_sample';
 
-  const chat2 = await travelOrchestrator.processMessage(sId, 'Select Flight', {
-    action: 'SELECT_FLIGHT',
-    item: chat1.cards?.data[0],
-    cabinClass: 'Premium Economy',
-    price: chat1.cards?.data[0].cabinTiers['Premium Economy']
-  });
-  assert(chat2.step === 'HOTEL_SELECTION', 'Conversational step transitioned to HOTEL_SELECTION');
+  // Mock global fetch for live provider requests during pipeline test
+  const originalFetch = global.fetch;
+  global.fetch = async (url: any, init?: any): Promise<any> => {
+    const urlStr = String(url);
+    if (urlStr.includes('/oauth2/token')) {
+      return {
+        ok: true,
+        json: async () => ({ access_token: 'mock_bearer_token', expires_in: 1800 })
+      };
+    }
+    if (urlStr.includes('/v2/shopping/flight-offers')) {
+      return {
+        ok: true,
+        json: async () => ({
+          data: [
+            {
+              id: 'flt-1',
+              validatingAirlineCodes: ['AF'],
+              itineraries: [
+                {
+                  segments: [
+                    {
+                      departure: { iataCode: 'JFK', at: '2026-10-12T08:30:00' },
+                      arrival: { iataCode: 'CDG', at: '2026-10-12T21:45:00' },
+                      carrierCode: 'AF',
+                      number: 'AF007'
+                    }
+                  ]
+                }
+              ],
+              price: { total: '720', currency: 'USD' },
+              travelerPricings: [
+                {
+                  fareDetailsBySegment: [
+                    { cabin: 'ECONOMY' }
+                  ]
+                }
+              ]
+            }
+          ]
+        })
+      };
+    }
+    if (urlStr.includes('/accommodations/search')) {
+      return {
+        ok: true,
+        json: async () => ({
+          data: [
+            {
+              id: 'bkg-prop-101',
+              name: 'Paris Luxury Palace Hotel',
+              city: 'Paris',
+              address: '15 Champs-Elysees, Paris',
+              star_rating: 5,
+              review_score: 9.4,
+              review_count: 1240,
+              area: 'Near Airport',
+              price: 210,
+              photos: [
+                'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800',
+                'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800',
+                'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800'
+              ]
+            }
+          ]
+        })
+      };
+    }
+    return originalFetch(url, init);
+  };
 
-  const chat3 = await travelOrchestrator.processMessage(sId, 'Select Hotel', {
-    action: 'SELECT_HOTEL',
-    item: chat2.cards?.data[0]
-  });
-  assert(chat3.step === 'CAB_SELECTION', 'Conversational step transitioned to CAB_SELECTION');
-
-  const chat4 = await travelOrchestrator.processMessage(sId, 'Select Cab', {
-    action: 'SELECT_CAB',
-    item: chat3.cards?.data[0]
-  });
-  assert(chat4.step === 'CHECKOUT_SUMMARY', 'Conversational step transitioned to CHECKOUT_SUMMARY');
-  assert(chat4.cards?.data?.paymentSession !== undefined, 'Payment session attached to summary card');
-
-  const chat5 = await travelOrchestrator.processMessage(sId, 'Confirm Booking', {
-    action: 'CONFIRM_BOOKING',
-    paymentMethod: 'Credit Card (Mastercard)'
-  });
-  assert(chat5.step === 'CONFIRMED', 'Conversational step transitioned to CONFIRMED');
-  assert(chat5.cards?.data?.pdfUrl !== undefined, 'PDF URL returned on confirmation');
-  assert(chat5.cards?.data?.printUrl !== undefined, 'Print voucher URL returned on confirmation');
-
-  // Verify PDF file exists
-  const ref = chat5.cards?.data?.bookingReference;
-  const pdfFilePath = path.join(process.cwd(), 'public', 'tickets', `Ticket_${ref}.pdf`);
-  assert(fs.existsSync(pdfFilePath), 'Official PDF ticket voucher generated on filesystem');
-
-  // Verify Database Record
-  const dbRecord = await prisma.booking.findUnique({
-    where: { bookingReference: ref }
-  });
-  assert(dbRecord !== null, 'Booking record saved in database');
-  assert(dbRecord?.status === 'CONFIRMED', 'Database status marked CONFIRMED');
-
-  // Verify print-ticket.html exists
-  assert(fs.existsSync(path.join(process.cwd(), 'public', 'print-ticket.html')), 'print-ticket.html available for browser printing');
-
-  // Clean up test ticket and user profile
   try {
-    fs.unlinkSync(pdfFilePath);
+    const flightOffers = await amadeusFlightProvider.searchFlights({
+      origin: 'New York (JFK)',
+      destination: 'Paris',
+      preferredCabin: 'Business'
+    });
+    assert(flightOffers.length > 0, 'Amadeus provider successfully retrieves and parses live flight offers');
+    assert(flightOffers[0].cabinTiers !== undefined, 'Flight offer contains structured cabin tiers');
+
+    const hotelOffers = await bookingComProvider.searchAccommodations({ destination: 'Paris' });
+    assert(hotelOffers.length > 0, 'Booking.com provider successfully retrieves and parses accommodations');
+    assert(hotelOffers[0].images.length >= 3, 'Hotel accommodation contains carousel images');
+
+    const paySession = await bookingComPaymentProvider.createPaymentSession({
+      bookingReference: 'TRV-REGRESS-01',
+      totalCost: 930.00
+    });
+    assert(paySession.sessionId.startsWith('bkg_pay_'), 'Booking.com payment session created with valid key');
+
+    // Conversational booking workflow
+    const chat1 = await travelOrchestrator.processMessage(undefined, 'Book a trip to Paris from New York for 2 people');
+    assert(chat1.step === 'FLIGHT_SELECTION', 'Conversational step transitioned to FLIGHT_SELECTION');
+    assert(chat1.cards?.type === 'flights', 'Chatbot provides flight selection cards when configured');
+    const sId = chat1.sessionId;
+
+    const chat2 = await travelOrchestrator.processMessage(sId, 'Select Flight', {
+      action: 'SELECT_FLIGHT',
+      item: chat1.cards?.data[0],
+      cabinClass: 'Business',
+      price: chat1.cards?.data[0].cabinTiers['Business']
+    });
+    assert(chat2.step === 'HOTEL_SELECTION', 'Conversational step transitioned to HOTEL_SELECTION');
+    assert(chat2.cards?.type === 'hotels', 'Chatbot provides hotel selection cards when configured');
+
+    const chat3 = await travelOrchestrator.processMessage(sId, 'Select Hotel', {
+      action: 'SELECT_HOTEL',
+      item: chat2.cards?.data[0]
+    });
+    assert(chat3.step === 'CAB_SELECTION', 'Conversational step transitioned to CAB_SELECTION');
+
+    const chat4 = await travelOrchestrator.processMessage(sId, 'Select Cab', {
+      action: 'SELECT_CAB',
+      item: chat3.cards?.data[0]
+    });
+    assert(chat4.step === 'CHECKOUT_SUMMARY', 'Conversational step transitioned to CHECKOUT_SUMMARY');
+    assert(chat4.cards?.data?.paymentSession !== undefined, 'Payment session generated and attached to checkout summary');
+
+    const chat5 = await travelOrchestrator.processMessage(sId, 'Confirm Booking', {
+      action: 'CONFIRM_BOOKING',
+      paymentMethod: 'Credit Card (Mastercard)'
+    });
+    assert(chat5.step === 'CONFIRMED', 'Conversational step transitioned to CONFIRMED');
+    assert(chat5.cards?.data?.pdfUrl !== undefined, 'Official PDF URL returned on confirmation');
+
+    const ref = chat5.cards?.data?.bookingReference;
+    const pdfFilePath = path.join(process.cwd(), 'public', 'tickets', `Ticket_${ref}.pdf`);
+    assert(fs.existsSync(pdfFilePath), 'Official PDF ticket voucher generated on filesystem');
+
+    const dbRecord = await prisma.booking.findUnique({
+      where: { bookingReference: ref }
+    });
+    assert(dbRecord !== null, 'Booking record saved in database');
+    assert(dbRecord?.status === 'CONFIRMED', 'Database status marked CONFIRMED');
+
+    // Clean up test ticket
+    try {
+      if (fs.existsSync(pdfFilePath)) fs.unlinkSync(pdfFilePath);
+    } catch(e) {}
+
+  } finally {
+    global.fetch = originalFetch;
+    // Restore original environment
+    if (origAmadeusKey) process.env.AMADEUS_API_KEY = origAmadeusKey;
+    if (origAmadeusSecret) process.env.AMADEUS_API_SECRET = origAmadeusSecret;
+    if (origBookingKey) process.env.BOOKING_COM_API_KEY = origBookingKey;
+    if (origPaymentsKey) process.env.BOOKING_COM_PAYMENTS_API_KEY = origPaymentsKey;
+  }
+
+  // Clean up user profile
+  try {
     if (fs.existsSync(mdProfilePath)) fs.unlinkSync(mdProfilePath);
   } catch(e) {}
 

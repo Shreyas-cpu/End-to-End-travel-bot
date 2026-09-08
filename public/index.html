@@ -82,18 +82,26 @@
 
       <!-- Provider Diagnostics Pill -->
       <div class="provider-badge-box">
-        <div class="provider-title"><i class="fa-solid fa-plug"></i> Connected Engines</div>
+        <div class="provider-title"><i class="fa-solid fa-plug"></i> Live Engine Status</div>
         <div class="provider-row">
           <span>Booking.com v3</span>
-          <span class="pill-badge mock" id="bkg-badge">Ready (Plug & Play)</span>
+          <span class="pill-badge error" id="bkg-badge">No API Key</span>
         </div>
         <div class="provider-row">
           <span>Amadeus Flights</span>
-          <span class="pill-badge mock" id="flt-badge">Ready (Plug & Play)</span>
+          <span class="pill-badge error" id="flt-badge">No API Key</span>
         </div>
         <div class="provider-row">
-          <span>PDF Document Engine</span>
-          <span class="pill-badge live">Active</span>
+          <span>Booking Payments</span>
+          <span class="pill-badge error" id="pay-badge">No API Key</span>
+        </div>
+        <div class="provider-row">
+          <span>Gemini AI Engine</span>
+          <span class="pill-badge error" id="llm-badge">No API Key</span>
+        </div>
+        <div class="provider-row">
+          <span>PDF Voucher Engine</span>
+          <span class="pill-badge live">● Active</span>
         </div>
       </div>
 

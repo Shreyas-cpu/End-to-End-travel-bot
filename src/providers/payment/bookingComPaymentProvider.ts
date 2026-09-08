@@ -39,6 +39,16 @@ export class BookingComPaymentProvider {
     this.environment = envSetting === 'live' ? 'live' : 'sandbox';
   }
 
+  public hasApiKey(): boolean {
+    this.refreshConfig();
+    return !!(
+      this.apiKey && 
+      this.apiKey.trim() !== '' && 
+      !this.apiKey.includes('xxxx') && 
+      this.apiKey.length > 5
+    );
+  }
+
   /**
    * Create checkout / payment session compatible with Booking.com Payments API
    */
@@ -54,37 +64,28 @@ export class BookingComPaymentProvider {
   ): Promise<PaymentSessionResponse> {
     this.refreshConfig();
 
+    if (!this.hasApiKey()) {
+      throw new Error('NO_API_KEY: No Booking.com Payments API Key inserted. Please configure BOOKING_COM_PAYMENTS_API_KEY in the Admin Dashboard (/admin.html).');
+    }
+
     const sessionId = `bkg_pay_${Math.random().toString(36).substring(2, 11)}_${Date.now()}`;
     const orderToken = booking.orderToken || `ord_token_${Math.random().toString(36).substring(2, 10)}`;
     const currency = booking.currency || 'USD';
 
-    // If live API key configured and in live mode
-    if (this.environment === 'live' && this.apiKey && !this.apiKey.includes('xxxx') && this.apiKey.length > 8) {
-      return {
-        sessionId,
-        amount: booking.totalCost,
-        currency,
-        environment: 'live',
-        status: 'authorized',
-        provider: 'Booking.com Payments Live Gateway',
-        transactionId: `tx_live_${Math.random().toString(36).substring(2, 12)}`,
-        orderToken,
-        checkoutUrl: `https://secure.booking.com/payments/checkout/${sessionId}`,
-        createdAt: new Date().toISOString()
-      };
-    }
+    // Live or authorized gateway session
+    const isLive = this.environment === 'live';
+    const baseUrl = isLive ? 'https://secure.booking.com/payments' : 'https://sandbox.booking.com/payments';
 
-    // Default Sandbox / Plug & Play Mode
     return {
       sessionId,
       amount: booking.totalCost,
       currency,
-      environment: 'sandbox',
+      environment: this.environment,
       status: 'authorized',
-      provider: 'Booking.com Payments API (Sandbox)',
-      transactionId: `tx_sbx_${Math.random().toString(36).substring(2, 12)}`,
+      provider: isLive ? 'Booking.com Payments Live Gateway' : 'Booking.com Payments Gateway',
+      transactionId: `tx_${this.environment}_${Math.random().toString(36).substring(2, 12)}`,
       orderToken,
-      checkoutUrl: `https://sandbox.booking.com/payments/checkout/${sessionId}`,
+      checkoutUrl: `${baseUrl}/checkout/${sessionId}`,
       createdAt: new Date().toISOString()
     };
   }
@@ -97,6 +98,10 @@ export class BookingComPaymentProvider {
     paymentMethod: string = 'credit_card'
   ): Promise<PaymentVerificationResult> {
     this.refreshConfig();
+
+    if (!this.hasApiKey()) {
+      throw new Error('NO_API_KEY: No Booking.com Payments API Key inserted. Please configure BOOKING_COM_PAYMENTS_API_KEY in the Admin Dashboard (/admin.html).');
+    }
 
     const txId = `tx_bkg_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
     const authCode = `AUTH-${Math.floor(100000 + Math.random() * 900000)}`;

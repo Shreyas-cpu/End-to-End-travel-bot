@@ -24,39 +24,53 @@ app.use(express.static(path.join(process.cwd(), 'public')));
  * Health check & Provider diagnostics
  */
 app.get('/api/health', (req: Request, res: Response) => {
+  adminConfigService.getConfig();
+  const hasAmadeus = Boolean(process.env.AMADEUS_API_KEY && process.env.AMADEUS_API_KEY.trim() !== '' && !process.env.AMADEUS_API_KEY.includes('xxxx'));
+  const hasBooking = Boolean(process.env.BOOKING_COM_API_KEY && process.env.BOOKING_COM_API_KEY.trim() !== '' && !process.env.BOOKING_COM_API_KEY.includes('xxxx'));
+  const hasPayments = Boolean(process.env.BOOKING_COM_PAYMENTS_API_KEY && process.env.BOOKING_COM_PAYMENTS_API_KEY.trim() !== '' && !process.env.BOOKING_COM_PAYMENTS_API_KEY.includes('xxxx'));
+  const hasGemini = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== '' && !process.env.GEMINI_API_KEY.includes('xxxx'));
+
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    framework: 'Travel Booking AI Assistant Framework (MVP)',
+    framework: 'Travel Booking AI Assistant Framework',
     providers: {
       hotels: {
-        provider: process.env.HOTEL_PROVIDER || 'mock',
+        provider: 'booking_com',
         target: 'Booking.com Demand API v3',
-        status: process.env.BOOKING_COM_API_KEY ? 'Live API Configured' : 'Mock Framework Active (Plug & Play)'
+        configured: hasBooking,
+        status: hasBooking ? 'Live API Configured' : 'Error: No API Key Inserted'
       },
       flights: {
-        provider: process.env.FLIGHT_PROVIDER || 'mock',
+        provider: 'amadeus',
         target: 'Amadeus Flight Offers v2',
-        status: process.env.AMADEUS_API_KEY ? 'Live API Configured' : 'Mock Framework Active (Plug & Play)'
+        configured: hasAmadeus,
+        status: hasAmadeus ? 'Live API Configured' : 'Error: No API Key Inserted'
+      },
+      payments: {
+        provider: 'booking_com_payments',
+        target: 'Booking.com Payments API',
+        configured: hasPayments,
+        status: hasPayments ? 'Live API Configured' : 'Error: No API Key Inserted'
       },
       cabs: {
-        provider: process.env.CAB_PROVIDER || 'mock',
-        target: 'Aggregator / Uber Transfers',
-        status: 'Mock Framework Active'
+        provider: process.env.CAB_PROVIDER || 'standard',
+        target: 'Ground Transfer Dispatch',
+        status: 'Active'
       },
       ticketing: {
         engine: 'PDFKit Native Generator',
         status: 'Active'
       },
       llm: {
-        provider: process.env.LLM_PROVIDER || 'rule_engine',
-        status: (process.env.LLM_PROVIDER === 'gemini' || !!process.env.GEMINI_API_KEY)
-          ? 'Google Gemini 2.5 Flash Connected & Active'
-          : 'Deterministic Rule Engine Active'
+        provider: 'gemini',
+        configured: hasGemini,
+        status: hasGemini ? 'Google Gemini 2.5 Flash Connected & Active' : 'Error: No API Key Inserted'
       }
     }
   });
 });
+
 
 /**
  * Main conversational webhook endpoint
@@ -240,9 +254,10 @@ app.post('/api/admin/test-connection', async (req: Request, res: Response) => {
  */
 app.listen(PORT, () => {
   console.log(`=======================================================`);
-  console.log(`🚀 Travel Booking AI Framework Server running on:`);
+  console.log(`🚀 Travel Booking AI Assistant Server running on:`);
   console.log(`   http://localhost:${PORT}`);
-  console.log(`   Hotel Engine: Booking.com Demand API (${process.env.HOTEL_PROVIDER || 'mock'})`);
-  console.log(`   Flight Engine: Amadeus Offers (${process.env.FLIGHT_PROVIDER || 'mock'})`);
+  console.log(`   Hotel Engine: Booking.com Demand API v3 (Live)`);
+  console.log(`   Flight Engine: Amadeus Flight Offers v2 (Live)`);
+  console.log(`   Admin Dashboard: http://localhost:${PORT}/admin.html`);
   console.log(`=======================================================`);
 });

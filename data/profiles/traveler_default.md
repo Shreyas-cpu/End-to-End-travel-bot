@@ -8,16 +8,21 @@
 - **Email**: traveler@example.com
 
 ## Travel Preferences
-- **Preferred Cabin Class**: Premium Economy
+- **Preferred Cabin Class**: Business
 - **Preferred Hotel Location**: Near Airport
 - **Preferred Departure Time**: morning
 - **Favorite Airlines**: Air France, Delta Air Lines, British Airways
-- **Frequent Destinations**: Paris, London, Rome
+- **Frequent Destinations**: Paris, London, Rome, New York
 - **Preferred Amenities**: Free WiFi, Breakfast Included
 
 ## Booking History
 | Date | Reference | Destination | Flight & Cabin | Hotel | Total USD |
 |---|---|---|---|---|---|
-| 2026-09-04 | `TRV-657978` | Rome | British Airways (BA 178) (Premium Economy) | Rome Airport Transit Plaza Hotel | $985.60 |
-| 2026-09-04 | `TRV-592321` | Rome | British Airways (BA 178) (Premium Economy) (N/A) | Rome Airport Transit Plaza Hotel | $985.60 |
-| 2026-09-04 | `TRV-674638` | London | British Airways (BA 178) (Business) (N/A) (N/A) | Premier Inn London Heathrow Airport T4 | $1766.24 |
+| 2026-09-08 | `TRV-894828` | New York | Air France (AF AF007) (Business) | Paris Luxury Palace Hotel | $3249.12 |
+| 2026-09-08 | `TRV-366792` | New York | Air France (AF AF007) (Business) (N/A) | Paris Luxury Palace Hotel | $3249.12 |
+| 2026-09-08 | `TRV-533419` | Rome | British Airways (BA 178) (Premium Economy) (N/A) (N/A) | Rome Airport Transit Plaza Hotel | $985.60 |
+| 2026-09-04 | `TRV-312947` | Paris | Air France (AF 007) (Economy) (N/A) (N/A) (N/A) | Ibis Paris CDG Airport Hub | $1024.80 |
+| 2026-09-04 | `TRV-664797` | Rome | British Airways (BA 178) (Premium Economy) (N/A) (N/A) (N/A) (N/A) | Rome Airport Transit Plaza Hotel | $985.60 |
+| 2026-09-04 | `TRV-657978` | Rome | British Airways (BA 178) (Premium Economy) (N/A) (N/A) (N/A) (N/A) (N/A) | Rome Airport Transit Plaza Hotel | $985.60 |
+| 2026-09-04 | `TRV-592321` | Rome | British Airways (BA 178) (Premium Economy) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) | Rome Airport Transit Plaza Hotel | $985.60 |
+| 2026-09-04 | `TRV-674638` | London | British Airways (BA 178) (Business) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) (N/A) | Premier Inn London Heathrow Airport T4 | $1766.24 |

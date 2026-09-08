@@ -1,17 +1,17 @@
 {
-  "flightProvider": "mock",
+  "flightProvider": "amadeus",
   "amadeusApiKey": "",
   "amadeusApiSecret": "",
   "hotelProvider": "booking_com",
   "bookingComApiKey": "",
   "bookingComAffiliateId": "",
-  "paymentsProvider": "mock",
-  "bookingComPaymentsApiKey": "live_pk_bkg_99218204812",
+  "paymentsProvider": "booking_com_payments",
+  "bookingComPaymentsApiKey": "",
   "paymentsEnvironment": "sandbox",
   "llmProvider": "rule_engine",
   "geminiApiKey": "",
   "geminiModel": "gemini-2.5-flash",
-  "cabProvider": "mock",
-  "updatedAt": "2026-09-04T10:52:50.146Z",
+  "cabProvider": "standard",
+  "updatedAt": "2026-09-08T10:17:29.260Z",
   "paymentGatewayMode": "sandbox"
 }

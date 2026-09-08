@@ -23,6 +23,7 @@ const stepElements = {
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   registerServiceWorker();
+  updateProviderHealthBadges();
   if (currentSessionId) {
     loadChatHistory(currentSessionId);
   }
@@ -119,6 +120,9 @@ async function sendMessage(text, actionPayload = null) {
     // Update Sidebar Workflow Indicator
     updateWorkflowTracker(data.step);
 
+    // Refresh provider health badges
+    updateProviderHealthBadges();
+
     // Append Assistant Response
     appendAssistantMessage(data.reply, data.cards);
 
@@ -150,6 +154,50 @@ async function loadChatHistory(sessionId) {
     }
   } catch (err) {
     console.warn('Could not load history:', err);
+  }
+}
+
+async function updateProviderHealthBadges() {
+  try {
+    const response = await fetch('/api/health');
+    if (!response.ok) return;
+    const data = await response.json();
+    if (!data.providers) return;
+
+    const bkgBadge = document.getElementById('bkg-badge');
+    const fltBadge = document.getElementById('flt-badge');
+    const payBadge = document.getElementById('pay-badge');
+    const llmBadge = document.getElementById('llm-badge');
+
+    if (bkgBadge && data.providers.hotels) {
+      const ok = data.providers.hotels.configured;
+      bkgBadge.textContent = ok ? 'Live API' : 'No API Key';
+      bkgBadge.className = `pill-badge ${ok ? 'live' : 'error'}`;
+      bkgBadge.title = data.providers.hotels.status || '';
+    }
+
+    if (fltBadge && data.providers.flights) {
+      const ok = data.providers.flights.configured;
+      fltBadge.textContent = ok ? 'Live API' : 'No API Key';
+      fltBadge.className = `pill-badge ${ok ? 'live' : 'error'}`;
+      fltBadge.title = data.providers.flights.status || '';
+    }
+
+    if (payBadge && data.providers.payments) {
+      const ok = data.providers.payments.configured;
+      payBadge.textContent = ok ? 'Live API' : 'No API Key';
+      payBadge.className = `pill-badge ${ok ? 'live' : 'error'}`;
+      payBadge.title = data.providers.payments.status || '';
+    }
+
+    if (llmBadge && data.providers.llm) {
+      const ok = data.providers.llm.configured;
+      llmBadge.textContent = ok ? 'Gemini 2.5' : 'No API Key';
+      llmBadge.className = `pill-badge ${ok ? 'live' : 'error'}`;
+      llmBadge.title = data.providers.llm.status || '';
+    }
+  } catch (err) {
+    console.warn('Failed to fetch provider health:', err);
   }
 }
 
@@ -432,11 +480,18 @@ function renderCards(cards) {
             <span>$${s.totalCost.toFixed(2)} USD</span>
           </div>
 
-          <!-- Payment Security Badge -->
-          <div class="payment-gateway-badge">
-            <i class="fa-solid fa-shield-halved"></i>
-            <span>Secured by <strong>${escapeHtml(gatewayProvider)}</strong> (${gatewayEnv})</span>
-          </div>
+          <!-- Payment Security Badge or Missing Key Alert -->
+          ${s.hasPaymentsKey ? `
+            <div class="payment-gateway-badge">
+              <i class="fa-solid fa-shield-halved"></i>
+              <span>Secured by <strong>${escapeHtml(gatewayProvider)}</strong> (${gatewayEnv})</span>
+            </div>
+          ` : `
+            <div class="payment-gateway-badge error" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #FCA5A5;">
+              <i class="fa-solid fa-triangle-exclamation" style="color: #F87171;"></i>
+              <span><strong>No Booking.com Payments API Key inserted!</strong> <a href="/admin.html" style="color: #60A5FA; text-decoration: underline; margin-left: 6px;">Configure in Admin</a></span>
+            </div>
+          `}
         </div>
 
         <button class="btn-confirm-booking" onclick="handleOpenPaymentModal()">
@@ -475,6 +530,30 @@ function renderCards(cards) {
           </a>
           <a href="${printTicketUrl}" target="_blank" class="btn-print-ticket">
             <i class="fa-solid fa-print"></i> Print Itinerary
+          </a>
+        </div>
+      </div>
+    `;
+  }
+
+  if (cards.type === 'error' && cards.data) {
+    const e = cards.data;
+    return `
+      <div class="error-card">
+        <div class="error-card-header">
+          <div class="error-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          <div>
+            <h4>${escapeHtml(e.title || 'API Key Missing')}</h4>
+            <p class="error-provider">${escapeHtml(e.provider || 'Provider Configuration')}</p>
+          </div>
+        </div>
+        <div class="error-card-body">
+          <p>${escapeHtml(e.message || 'No API Key inserted. The mock framework has been removed.')}</p>
+          ${e.missingKey ? `<div class="missing-key-badge"><i class="fa-solid fa-key"></i> Missing Key: <code>${escapeHtml(e.missingKey)}</code></div>` : ''}
+        </div>
+        <div class="error-card-footer">
+          <a href="${e.actionUrl || '/admin.html'}" class="btn-error-admin">
+            <i class="fa-solid fa-sliders"></i> ${escapeHtml(e.actionLabel || 'Configure Key in Admin Dashboard')}
           </a>
         </div>
       </div>
