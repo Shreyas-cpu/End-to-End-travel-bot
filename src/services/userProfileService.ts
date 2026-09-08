@@ -32,8 +32,19 @@ export class UserProfileService {
   }
 
   private ensureDirectory() {
-    if (!fs.existsSync(this.profilesDir)) {
-      fs.mkdirSync(this.profilesDir, { recursive: true });
+    try {
+      if (!fs.existsSync(this.profilesDir)) {
+        fs.mkdirSync(this.profilesDir, { recursive: true });
+      }
+    } catch {
+      this.profilesDir = path.join("/tmp", "profiles");
+      try {
+        if (!fs.existsSync(this.profilesDir)) {
+          fs.mkdirSync(this.profilesDir, { recursive: true });
+        }
+      } catch (e) {
+        console.warn("[UserProfileService] Cannot create profiles directory:", e);
+      }
     }
   }
 
@@ -47,7 +58,12 @@ export class UserProfileService {
    */
   async getProfile(userId: string = "traveler_default"): Promise<UserProfile> {
     this.ensureDirectory();
-    const filePath = this.getProfilePath(userId);
+    let filePath = this.getProfilePath(userId);
+    const cleanId = userId.replace(/[^a-zA-Z0-9_-]/g, "_");
+    const tmpFile = path.join("/tmp", `${cleanId}.md`);
+    if (fs.existsSync(tmpFile)) {
+      filePath = tmpFile;
+    }
 
     if (!fs.existsSync(filePath)) {
       const defaultProfile: UserProfile = {
@@ -94,7 +110,17 @@ export class UserProfileService {
     this.ensureDirectory();
     const filePath = this.getProfilePath(profile.userId);
     const markdown = this.serializeToMarkdown(profile);
-    fs.writeFileSync(filePath, markdown, "utf-8");
+    try {
+      fs.writeFileSync(filePath, markdown, "utf-8");
+    } catch (err) {
+      try {
+        const cleanId = profile.userId.replace(/[^a-zA-Z0-9_-]/g, "_");
+        const tmpFile = path.join("/tmp", `${cleanId}.md`);
+        fs.writeFileSync(tmpFile, markdown, "utf-8");
+      } catch (e) {
+        console.warn("[UserProfileService] Could not persist profile to disk:", e);
+      }
+    }
   }
 
   /**

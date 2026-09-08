@@ -33,9 +33,12 @@ export class AdminConfigService {
   }
 
   private loadConfig(): AdminConfig {
-    if (fs.existsSync(this.configPath)) {
+    const tmpPath = path.join("/tmp", "admin_config.json");
+    const targetPath = fs.existsSync(tmpPath) ? tmpPath : this.configPath;
+
+    if (fs.existsSync(targetPath)) {
       try {
-        const raw = fs.readFileSync(this.configPath, "utf-8");
+        const raw = fs.readFileSync(targetPath, "utf-8");
         return JSON.parse(raw);
       } catch (err) {
         console.warn("[AdminConfigService] Error reading config file, using environment defaults:", err);
@@ -146,10 +149,19 @@ export class AdminConfigService {
     this.currentConfig = updated;
     this.syncEnvironmentVariables();
 
-    // Persist to data directory
-    const dir = path.dirname(this.configPath);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(this.configPath, JSON.stringify(updated, null, 2), "utf-8");
+    // Persist to data directory or fallback to /tmp
+    try {
+      const dir = path.dirname(this.configPath);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(this.configPath, JSON.stringify(updated, null, 2), "utf-8");
+    } catch (err) {
+      try {
+        const tmpPath = path.join("/tmp", "admin_config.json");
+        fs.writeFileSync(tmpPath, JSON.stringify(updated, null, 2), "utf-8");
+      } catch (e) {
+        console.warn("[AdminConfigService] Cannot write config to disk (read-only filesystem):", e);
+      }
+    }
 
     return this.currentConfig;
   }

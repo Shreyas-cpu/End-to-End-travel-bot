@@ -5,9 +5,15 @@
 # Build output
 dist/
 
+# Dependencies
+node_modules/
+
 # Logs
 *.log
 npm-debug.log*
+
+# Tickets
+public/tickets/*.pdf
 
 # System files
 .DS_Store

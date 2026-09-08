@@ -7,9 +7,20 @@ export class PDFTicketGenerator {
   private outputDir: string;
 
   constructor() {
-    this.outputDir = path.join(process.cwd(), 'public', 'tickets');
-    if (!fs.existsSync(this.outputDir)) {
-      fs.mkdirSync(this.outputDir, { recursive: true });
+    try {
+      this.outputDir = path.join(process.cwd(), 'public', 'tickets');
+      if (!fs.existsSync(this.outputDir)) {
+        fs.mkdirSync(this.outputDir, { recursive: true });
+      }
+    } catch {
+      this.outputDir = path.join('/tmp', 'tickets');
+      try {
+        if (!fs.existsSync(this.outputDir)) {
+          fs.mkdirSync(this.outputDir, { recursive: true });
+        }
+      } catch (e) {
+        console.warn("[PDFTicketGenerator] Cannot create tickets directory:", e);
+      }
     }
   }
 

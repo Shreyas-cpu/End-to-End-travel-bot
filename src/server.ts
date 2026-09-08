@@ -10,6 +10,11 @@ import { adminConfigService } from './services/adminConfigService';
 
 dotenv.config();
 
+// Fallback DATABASE_URL for serverless environments
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = "file:./dev.db";
+}
+
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3000;
@@ -17,8 +22,18 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// Normalize req.url when rewritten by Vercel serverless functions
+app.use((req, res, next) => {
+  if (req.originalUrl && req.originalUrl.startsWith('/api') && (req.url === '/' || req.url === '')) {
+    req.url = req.originalUrl;
+  }
+  next();
+});
+
 // Serve static frontend assets & generated PDF tickets
 app.use(express.static(path.join(process.cwd(), 'public')));
+app.use('/tickets', express.static(path.join(process.cwd(), 'public', 'tickets')));
+app.use('/tickets', express.static('/tmp/tickets'));
 
 /**
  * Health check & Provider diagnostics
@@ -258,14 +273,25 @@ app.post('/api/admin/test-connection', async (req: Request, res: Response) => {
 });
 
 /**
- * Start listening
+ * Start listening in standalone/local environment
  */
-app.listen(PORT, () => {
-  console.log(`=======================================================`);
-  console.log(`🚀 Travel Booking AI Assistant Server running on:`);
-  console.log(`   http://localhost:${PORT}`);
-  console.log(`   Hotel Engine: Booking.com Demand API v3 (Live)`);
-  console.log(`   Flight Engine: Amadeus Flight Offers v2 (Live)`);
-  console.log(`   Admin Dashboard: http://localhost:${PORT}/admin.html`);
-  console.log(`=======================================================`);
-});
+if (require.main === module && !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`=======================================================`);
+    console.log(`🚀 Travel Booking AI Assistant Server running on:`);
+    console.log(`   http://localhost:${PORT}`);
+    console.log(`   Hotel Engine: Booking.com Demand API v3 (Live)`);
+    console.log(`   Flight Engine: Amadeus Flight Offers v2 (Live)`);
+    console.log(`   Admin Dashboard: http://localhost:${PORT}/admin.html`);
+    console.log(`=======================================================`);
+  });
+}
+
+export default app;
+export { app };
+// CommonJS export compatibility
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = app;
+  (module.exports as any).default = app;
+  (module.exports as any).app = app;
+}
