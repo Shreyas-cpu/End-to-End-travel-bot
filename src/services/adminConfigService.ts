@@ -157,7 +157,10 @@ export class AdminConfigService {
   /**
    * Diagnostic connection test for each integration
    */
-  async testConnection(provider: "gemini" | "amadeus" | "booking_com" | "booking_com_payments"): Promise<{
+  async testConnection(
+    provider: "gemini" | "amadeus" | "booking_com" | "booking_com_payments",
+    overrides?: { apiKey?: string; apiSecret?: string; model?: string; environment?: string }
+  ): Promise<{
     provider: string;
     success: boolean;
     status: string;
@@ -167,7 +170,12 @@ export class AdminConfigService {
     const start = Date.now();
 
     if (provider === "gemini") {
-      const key = this.currentConfig.geminiApiKey;
+      let key = overrides?.apiKey !== undefined ? overrides.apiKey : this.currentConfig.geminiApiKey;
+      if (key && key.includes("••••")) {
+        key = this.currentConfig.geminiApiKey;
+      }
+      const model = overrides?.model || this.currentConfig.geminiModel || 'gemini-2.5-flash';
+
       if (!key || key.trim() === "" || key.includes("xxxx")) {
         return {
           provider: "Google Gemini 2.5 Flash",
@@ -179,7 +187,7 @@ export class AdminConfigService {
       }
 
       try {
-        const probeRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${this.currentConfig.geminiModel || 'gemini-2.5-flash'}:generateContent?key=${key}`, {
+        const probeRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ contents: [{ parts: [{ text: "ping" }] }] })
@@ -225,8 +233,10 @@ export class AdminConfigService {
         };
       }
 
-      const key = this.currentConfig.amadeusApiKey;
-      const secret = this.currentConfig.amadeusApiSecret;
+      let key = overrides?.apiKey !== undefined ? overrides.apiKey : this.currentConfig.amadeusApiKey;
+      if (key && key.includes("••••")) key = this.currentConfig.amadeusApiKey;
+      let secret = overrides?.apiSecret !== undefined ? overrides.apiSecret : this.currentConfig.amadeusApiSecret;
+      if (secret && secret.includes("••••")) secret = this.currentConfig.amadeusApiSecret;
 
       if (!key || key.trim() === "" || key.includes("xxxx") || !secret || secret.trim() === "" || secret.includes("xxxx")) {
         return {
@@ -291,7 +301,8 @@ export class AdminConfigService {
         };
       }
 
-      const key = this.currentConfig.bookingComApiKey;
+      let key = overrides?.apiKey !== undefined ? overrides.apiKey : this.currentConfig.bookingComApiKey;
+      if (key && key.includes("••••")) key = this.currentConfig.bookingComApiKey;
 
       if (!key || key.trim() === "" || key.includes("xxxx")) {
         return {
@@ -361,8 +372,9 @@ export class AdminConfigService {
         };
       }
 
-      const key = this.currentConfig.bookingComPaymentsApiKey;
-      const env = this.currentConfig.paymentsEnvironment || "sandbox";
+      let key = overrides?.apiKey !== undefined ? overrides.apiKey : this.currentConfig.bookingComPaymentsApiKey;
+      if (key && key.includes("••••")) key = this.currentConfig.bookingComPaymentsApiKey;
+      const env = overrides?.environment || this.currentConfig.paymentsEnvironment || "sandbox";
 
       if (!key || key.trim() === "" || key.includes("xxxx")) {
         return {

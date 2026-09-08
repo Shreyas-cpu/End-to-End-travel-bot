@@ -568,11 +568,25 @@
       const resultEl = document.getElementById(`result-${provider}`);
       resultEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Testing connection...`;
 
+      const payload = { provider };
+      if (provider === 'gemini') {
+        payload.apiKey = document.getElementById("geminiApiKey")?.value;
+        payload.model = document.getElementById("geminiModel")?.value;
+      } else if (provider === 'amadeus') {
+        payload.apiKey = document.getElementById("amadeusApiKey")?.value;
+        payload.apiSecret = document.getElementById("amadeusApiSecret")?.value;
+      } else if (provider === 'booking_com') {
+        payload.apiKey = document.getElementById("bookingComApiKey")?.value;
+      } else if (provider === 'booking_com_payments') {
+        payload.apiKey = document.getElementById("bookingComPaymentsApiKey")?.value;
+        payload.environment = document.getElementById("paymentsEnvironment")?.value;
+      }
+
       try {
         const res = await fetch("/api/admin/test-connection", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ provider })
+          body: JSON.stringify(payload)
         });
         const data = await res.json();
         if (data.success && data.result) {

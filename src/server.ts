@@ -246,8 +246,8 @@ app.post('/api/admin/config', (req: Request, res: Response) => {
  */
 app.post('/api/admin/test-connection', async (req: Request, res: Response) => {
   try {
-    const { provider } = req.body;
-    const result = await adminConfigService.testConnection(provider);
+    const { provider, apiKey, apiSecret, model, environment } = req.body;
+    const result = await adminConfigService.testConnection(provider, { apiKey, apiSecret, model, environment });
     res.json({
       success: true,
       result
