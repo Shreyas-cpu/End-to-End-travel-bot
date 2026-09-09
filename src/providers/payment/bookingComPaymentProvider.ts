@@ -34,8 +34,8 @@ export class BookingComPaymentProvider {
   }
 
   private refreshConfig() {
-    this.apiKey = process.env.BOOKING_COM_PAYMENTS_API_KEY;
-    const envSetting = (process.env.PAYMENTS_ENV || process.env.PAYMENT_GATEWAY_MODE || 'sandbox').toLowerCase();
+    this.apiKey = process.env.BOOKING_COM_PAYMENTS_API_KEY || process.env.BOOKING_COM_API_KEY;
+    const envSetting = (process.env.PAYMENTS_ENV || process.env.PAYMENT_GATEWAY_MODE || process.env.BOOKING_COM_ENV || 'sandbox').toLowerCase();
     this.environment = envSetting === 'live' ? 'live' : 'sandbox';
   }
 

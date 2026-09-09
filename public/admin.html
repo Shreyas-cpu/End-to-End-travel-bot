@@ -536,6 +536,7 @@
           <label>Transfer Dispatch Engine</label>
           <select class="form-input" id="cabProvider">
             <option value="mock">Mock Data (Testing) — 4 Vehicle Tiers (Standard, Executive, Electric, Van)</option>
+            <option value="booking_com">Live Booking.com Demand API Cars (Rental & Transfers)</option>
             <option value="standard">Standard Dispatch Engine (Production Routing)</option>
             <option value="uber">Live Uber / Aggregator Partner API (Stub)</option>
           </select>
@@ -735,6 +736,8 @@
         payload.apiSecret = document.getElementById("amadeusApiSecret")?.value;
       } else if (provider === 'booking_com') {
         payload.apiKey = document.getElementById("bookingComApiKey")?.value;
+        payload.affiliateId = document.getElementById("bookingComAffiliateId")?.value;
+        payload.environment = document.getElementById("paymentsEnvironment")?.value;
       } else if (provider === 'booking_com_payments') {
         payload.apiKey = document.getElementById("bookingComPaymentsApiKey")?.value;
         payload.environment = document.getElementById("paymentsEnvironment")?.value;

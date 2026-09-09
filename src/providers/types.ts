@@ -45,6 +45,15 @@ export interface HotelAccommodation {
   amenities: string[];
   cancellationPolicy: string;
   breakfastIncluded: boolean;
+  productId?: string;
+  deepLinkUrl?: string;
+  orderToken?: string;
+  checkinCheckoutTimes?: {
+    checkinFrom?: string | null;
+    checkinTo?: string | null;
+    checkoutFrom?: string | null;
+    checkoutTo?: string | null;
+  };
 }
 
 export interface CabTransfer {
@@ -61,6 +70,8 @@ export interface CabTransfer {
   routeType?: 'airport_to_hotel' | 'hotel_to_airport' | 'custom';
   driverRating: number;
   badge?: string;
+  supplier?: string;
+  offerId?: number | string;
 }
 
 export interface TravelSearchQuery {
@@ -87,4 +98,8 @@ export interface BookingDetails {
   currency: string;
   orderToken: string;
   createdAt: string;
+  bookingComOrderId?: string;
+  bookingComReservation?: string;
+  bookingComPincode?: string;
+  receiptUrl?: string;
 }

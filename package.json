@@ -8,7 +8,8 @@
     "postinstall": "prisma generate",
     "build": "prisma generate && tsc",
     "start": "node dist/server.js",
-    "test": "tsx tests/orchestrator.test.ts",
+    "test": "tsx tests/orchestrator.test.ts && tsx tests/bookingCom.test.ts",
+    "test:booking": "tsx tests/bookingCom.test.ts",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push"
   },
