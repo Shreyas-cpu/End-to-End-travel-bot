@@ -20,6 +20,19 @@ export interface ChatResponse {
   };
 }
 
+/** Words that may sit where a city name is expected but never name a place */
+const NON_CITY_WORDS = new Set([
+  'the', 'and', 'for', 'with', 'have', 'want', 'need', 'like', 'would', 'could', 'please',
+  'my', 'our', 'me', 'you', 'there', 'here', 'home', 'anywhere', 'somewhere', 'that', 'this',
+  'next', 'today', 'tomorrow', 'tonight', 'now', 'later', 'day', 'days', 'week', 'weeks',
+  'month', 'months', 'year', 'night', 'nights',
+  'january', 'february', 'march', 'april', 'june', 'july', 'august',
+  'september', 'october', 'november', 'december',
+  'book', 'find', 'search', 'travel', 'trip', 'fly', 'flying', 'flight', 'flights', 'get',
+  'going', 'see', 'visit', 'depart', 'leave', 'leaving', 'start', 'starting', 'know', 'help',
+  'plan', 'stay', 'check', 'hotel', 'hotels', 'cab', 'taxi', 'airport', 'city', 'people', 'adults'
+]);
+
 export class TravelOrchestrator {
   /**
    * Process an incoming user message or interactive selection action
@@ -80,7 +93,9 @@ export class TravelOrchestrator {
     }
 
     // Domain Guardrail: ensure query is travel-related
-    const guardrail = travelRAGService.isTravelRelated(cleanInput);
+    const inActiveBooking = session.currentStep !== 'INITIATION' ||
+      Boolean(session.destination || session.origin || session.startDate);
+    const guardrail = travelRAGService.isTravelRelated(cleanInput, { inActiveBooking });
     if (!guardrail.allowed) {
       const declineReply = guardrail.suggestedPrompt || 
         "✈️ I am specialized exclusively as your Travel Booking AI Assistant. I can assist you with flights, hotels, airport cabs, and travel guidelines (baggage, visas, airports). How may I help you with your journey today?";
@@ -921,10 +936,19 @@ export class TravelOrchestrator {
     else if (lower.includes('from new york') || lower.includes('from nyc') || lower.includes('from jfk')) origin = 'New York (JFK)';
     else if (lower.includes('from paris')) origin = 'Paris (CDG)';
 
+    // Fall back to generic city capture for anywhere outside the shortlist above
+    if (!origin) origin = this.extractCityAfter(lower, ['from', 'departing from', 'leaving from', 'flying out of']);
+    if (!destination) destination = this.extractCityAfter(lower, ['to', 'towards', 'visiting', 'going to']);
+    // "delhi to goa" states the origin without a "from"
+    if (!origin) origin = this.extractCityBeforeTo(lower);
+
     // Detect dates
     const dateMatch = lower.match(/(\d{4}-\d{2}-\d{2})/);
+    const naturalDate = this.parseNaturalDate(lower);
     if (dateMatch) {
       startDate = dateMatch[1];
+    } else if (naturalDate) {
+      startDate = naturalDate;
     } else if (lower.includes('oct 12') || lower.includes('october 12')) {
       startDate = '2026-10-12';
       endDate = '2026-10-16';
@@ -964,7 +988,84 @@ export class TravelOrchestrator {
       preferredCabin = 'Economy';
     }
 
+    if (startDate && !endDate) {
+      endDate = this.addDays(startDate, 4);
+    }
+
     return { destination, origin, startDate, endDate, guests, timePreference, preferredCabin };
+  }
+
+  /**
+   * Capture a city name following a preposition, e.g. "from mumbai at 25 october" -> "Mumbai"
+   */
+  private extractCityAfter(lower: string, prepositions: string[]): string | undefined {
+    for (const preposition of prepositions) {
+      // Lookahead keeps the candidate unconsumed, so "to fly to goa" still matches the second "to"
+      const matches = lower.matchAll(
+        new RegExp(`\\b${preposition}\\s+(?=([a-z][a-z'-]*(?:\\s+[a-z][a-z'-]*)?))`, 'g')
+      );
+      for (const match of matches) {
+        const city = this.toCityName(match[1]);
+        if (city) return city;
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Capture the origin stated as a bare route, e.g. "delhi to goa" -> "Delhi"
+   */
+  private extractCityBeforeTo(lower: string): string | undefined {
+    // Anchored so mid-sentence noise ("4-day trip to paris") is never read as an origin
+    const match = lower.match(/^([a-z][a-z'-]{2,}(?:\s+[a-z][a-z'-]{2,})?)\s+to\s+[a-z]/);
+    return match ? this.toCityName(match[1]) : undefined;
+  }
+
+  private toCityName(phrase: string): string | undefined {
+    const words = phrase.split(/\s+/).filter(w => !NON_CITY_WORDS.has(w) && w.length > 2);
+    if (!words.length) return undefined;
+
+    return words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  }
+
+  /**
+   * Parse conversational dates like "25 october" or "october 25th" into ISO form,
+   * rolling to next year when the day has already passed.
+   */
+  private parseNaturalDate(lower: string): string | undefined {
+    const monthToken = '(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*';
+    const dayFirst = lower.match(new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?${monthToken}\\b`));
+    const monthFirst = lower.match(new RegExp(`\\b${monthToken}\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b`));
+
+    let day: number | undefined;
+    let monthAbbr: string | undefined;
+    if (dayFirst) {
+      day = parseInt(dayFirst[1], 10);
+      monthAbbr = dayFirst[2];
+    } else if (monthFirst) {
+      monthAbbr = monthFirst[1];
+      day = parseInt(monthFirst[2], 10);
+    }
+
+    if (!day || !monthAbbr) return undefined;
+
+    const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+    const monthIndex = months.indexOf(monthAbbr);
+    if (monthIndex < 0 || day < 1 || day > 31) return undefined;
+
+    const today = new Date();
+    let year = today.getFullYear();
+    const candidate = new Date(Date.UTC(year, monthIndex, day));
+    if (candidate.getTime() < today.getTime()) year += 1;
+
+    return `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }
+
+  private addDays(isoDate: string, days: number): string {
+    const date = new Date(`${isoDate}T00:00:00Z`);
+    date.setUTCDate(date.getUTCDate() + days);
+    return date.toISOString().slice(0, 10);
   }
 
   private async saveBotMessage(sessionId: string, content: string, metadata?: any) {
